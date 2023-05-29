@@ -1,5 +1,6 @@
 #ifndef MEMORY_H
 #define MEMORY_H
+#include "info.h"
 
 class Memory {
     public:
@@ -18,6 +19,7 @@ class Memory {
 
 class VirtualMemory : public Memory{
     public:
+        VirtualMemory();
         VirtualMemory(int size);
     private:
         int var;
@@ -25,6 +27,7 @@ class VirtualMemory : public Memory{
 
 class PhysicalMemory : public Memory{
     public:
+        PhysicalMemory();
         PhysicalMemory(int size);
     private:
         int var;

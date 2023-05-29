@@ -1,4 +1,5 @@
 #include "../include/memory.h"
+#include "../include/info.h"
 #include <cstdlib>
 #include <random>
 using namespace std;
@@ -60,6 +61,11 @@ void Memory::fillMemoryWithRandoms(int* table, int table_size){
 /****************
  * VIRTUAL MEMORY
  */
+// make constructor is like base class
+VirtualMemory::VirtualMemory(){
+    setMemorySize(0);
+}
+
 VirtualMemory::VirtualMemory(int size){
     setMemorySize(size);
 }
@@ -67,6 +73,10 @@ VirtualMemory::VirtualMemory(int size){
 /****************
  * PHYSICAL MEMORY
  */
+// make constructor is like base class
+PhysicalMemory::PhysicalMemory(){
+    setMemorySize(0);
+}
 PhysicalMemory::PhysicalMemory(int size){
     setMemorySize(size);
 }

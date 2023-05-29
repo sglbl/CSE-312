@@ -1,14 +1,15 @@
 target: compile
 
 compile:
-	g++ -pthread -Wall main.cpp src/memory.cpp src/utils.cpp -lm -o bin/exe
+	g++ -pthread -Wall main.cpp src/memory.cpp src/utils.cpp src/info.cpp -lm -o bin/operateArrays
 
-run:
-	g++ -std=c++17 -pthread -Wall main.cpp src/memory.cpp src/utils.cpp -lm -o bin/exe
-	./bin/exe
+run: compile
+	./bin/operateArrays 4 5 10 LRU inverted 100 diskFileName.dat
+# ./operateArrays frameSize numPhysical numVirtual pageReplacement tableType pageTablePrintInt diskFileName.dat
+
 
 run_only:
-	./bin/exe
+	./bin/operateArrays
 
 clean:
 	rm -f bin/**

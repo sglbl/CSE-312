@@ -6,11 +6,11 @@
 #include "include/info.h"
 using namespace std;
 
-
+// static PageTableEntry* physical_frame;
+// static PageTableEntry* virtual_pages;
+static PageTableEntry* page_table;
 static VirtualMemory virtual_memory;
 static PhysicalMemory physical_memory;
-static PageTableEntry* physical_pages;
-static PageTableEntry* virtual_pages;
 static PrintStatInfo print_stat_info[3];
 
 void print_error_exit(string message){
@@ -35,34 +35,33 @@ int main(int argc, char *argv[]){
     // physical_memory.fillMemoryWithRandoms(virtual_memory.getMemory(), information.getSizeOfVirtualMemory());
 
     // initialize page table entries for physical and virtual memory
-	virtual_pages = (PageTableEntry*)calloc(information.getFramesOfVirtualMemory(), sizeof(PageTableEntry));
-    physical_pages = (PageTableEntry*)calloc(information.getFramesOfPhysicalMemory(), sizeof(PageTableEntry));
+	// virtual_pages = (PageTableEntry*)calloc(information.getFramesOfVirtualMemory(), sizeof(PageTableEntry));
+    // physical_frame = (PageTableEntry*)calloc(information.getFramesOfPhysicalMemory(), sizeof(PageTableEntry));
 
-    // initialize page table entries for physical and virtual memory
-    for (int i = 0; i < information.getFramesOfVirtualMemory(); i++){
-        virtual_pages[i].present = 0;
-        virtual_pages[i].modified_bit = 0;
-        virtual_pages[i].referenced_bit = 0;
-        virtual_pages[i].page_frame_number = -1;
+    // // initialize page table entries for physical and virtual memory
+    // for (int i = 0; i < information.getFramesOfVirtualMemory(); i++){
+    //     virtual_pages[i].present = 0;
+    //     virtual_pages[i].modified_bit = 0;
+    //     virtual_pages[i].referenced_bit = 0;
+    //     virtual_pages[i].page_frame_number = -1;
+    // }
+
+    // for (int i = 0; i < information.getFramesOfPhysicalMemory(); i++){
+    //     physical_frame[i].present = 0;
+    //     physical_frame[i].modified_bit = 0;
+    //     physical_frame[i].referenced_bit = 0;
+    //     physical_frame[i].page_frame_number = -1;
+    // }
+
+    information.fillPageTableWith0s(page_table, information.getFramesOfVirtualMemory());
+    information.fillPrintStatWith0s(print_stat_info, 3);
+
+    // initialize disk file
+    FILE* disk_file = fopen(information.getDiskFileName().c_str(), "w");
+    if (disk_file == NULL){
+        print_error_exit("Error: Disk file could not be created.\n");
     }
-
-    for (int i = 0; i < information.getFramesOfPhysicalMemory(); i++){
-        physical_pages[i].present = 0;
-        physical_pages[i].modified_bit = 0;
-        physical_pages[i].referenced_bit = 0;
-        physical_pages[i].page_frame_number = -1;
-    }
-
-    for (int i = 0; i < 3; i++){
-        print_stat_info[i].num_of_reads = 0;
-        print_stat_info[i].num_of_writes = 0;
-        print_stat_info[i].num_of_page_faults = 0;
-        print_stat_info[i].num_of_page_replacements = 0;
-        print_stat_info[i].num_of_disk_page_writes = 0;
-        print_stat_info[i].num_of_disk_page_reads = 0;
-        print_stat_info[i].estimated_ws_func = 0;
-    }
-
+    fclose(disk_file);
 
 
 
