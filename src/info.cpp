@@ -2,47 +2,10 @@
 #include <random>
 #include <pthread.h>
 #include <unistd.h>
+#include "../include/utils.h"
 #include "../include/info.h"
 #include "../include/memory.h"
 using namespace std;
-
-#define FRAME_SIZE 4096 // 4KB
-#define VIRTUAL_PAGE_FRAMES 16
-#define NUM_THREADS 16
-#define MATRIX_ROW 1000
-#define MATRIX_COL 3
-#define VECTOR_COL 1000
-#define VECTOR_ROW 3
-#define RESULT_COL 1
-
-/* matrixA * vectorA = resultA */
-static int matrixA[MATRIX_ROW][MATRIX_COL] = {0};
-static int vectorA[VECTOR_ROW][RESULT_COL] = {0};
-static int resultA[MATRIX_ROW][RESULT_COL] = {0};
-
-/* vectorB * vectorB^T = resultB  */
-static int vectorB[1][VECTOR_COL] = {0};
-static int vectorBT[VECTOR_COL][1] = {0};
-static int resultB[1][1] = {0};
-
-static int result_sum_array[MATRIX_ROW][RESULT_COL] = {0};
-static int result_sum_vector[MATRIX_ROW * RESULT_COL + 1] = {0};
-
-static int found_binary_search[5] = {0};
-static int found_linear_search[5] = {0};
-static SearchNumberInfo search_info = {{ -2, 59, 161, 376, 1000 },
-                                { false, false, false, false, false},
-                                { false, false, false, false, false}};
-
-static int part1FinishedThreads;
-static pthread_mutex_t csMutex;
-static pthread_mutex_t barrierMutex;
-static pthread_cond_t barrierCond;
-
-void Info::print_error_exit(string message){
-    cerr << message;
-    exit(EXIT_FAILURE);
-}
 
 void Info::argument_handler(int argc, char *argv[]){
     if(argc!=8)
@@ -78,24 +41,27 @@ void Info::argument_handler(int argc, char *argv[]){
     // 1 << x = 2^x
     size_of_frame = 1 << frameSizeExp; // 2^frameSizeExp -> Ex: 2^12 = 4096
     frames_of_physical_memory = 1 << physicalFrameExp; // 2^physicalFrameExp -> Ex: 2^5 = 32
-    frames_of_virtual_memory = 1 << virtualFrameExp; // 2^virtualFrameExp -> Ex: 2^10 = 1024
+    pages_of_virtual_memory = 1 << virtualFrameExp; // 2^virtualFrameExp -> Ex: 2^10 = 1024
 
     size_of_physical_memory = size_of_frame * frames_of_physical_memory; // 4096 frame size * 32 physical frame = 128KB int
-    size_of_virtual_memory = size_of_frame * frames_of_virtual_memory; // 4096 frame size * 1024 virtual frame = 4MB int
+    size_of_virtual_memory = size_of_frame * pages_of_virtual_memory; // 4096 frame size * 1024 virtual frame = 4MB int
 
 }
 
+void Info::fillPageTableWith0s(PageTableEntry** page_table, int table_size){
+    // NOTE: When incorrect, it is attempting to access a member of a pointer without dereferencing it properly.
+    // incorrect dereference: page_table[1]->present 
+    // corrrect dereference: (*page_table)[1].present or (*page_table + 1)->present    
 
-void Info::fillPageTableWith0s(PageTableEntry* page_table, int table_size){
-    // initialize page table entries for physical and virtual memory
-    page_table = (PageTableEntry*)calloc(table_size, sizeof(PageTableEntry));
     // initialize page table entries for physical and virtual memory
     for (int i = 0; i < table_size; i++){
-        page_table[i].present = 0;
-        page_table[i].modified_bit = 0;
-        page_table[i].referenced_bit = 0;
-        page_table[i].page_frame_number = -1;
+        (*page_table)[i].present = 1;
+        (*page_table)[i].modified_bit = 0;
+        (*page_table)[i].referenced_bit = 0;
+        (*page_table)[i].page_frame_number = -1;
+        (*page_table)[i].last_time_used = -1;
     }
+
 }
 
 void Info::fillPrintStatWith0s(PrintStatInfo* print_stat_info, int num_of_threads){

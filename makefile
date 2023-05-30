@@ -1,12 +1,12 @@
 target: compile
 
 compile:
-	g++ -pthread -Wall main.cpp src/memory.cpp src/utils.cpp src/info.cpp -lm -o bin/operateArrays
+	g++ -pthread -Wall main.cpp src/disk.cpp src/memory.cpp src/utils.cpp src/info.cpp -lm -o bin/operateArrays
 
 run: compile
 	./bin/operateArrays 4 5 10 LRU inverted 100 diskFileName.dat
+# ./bin/operateArrays 12 5 10 LRU inverted 10000 diskFileName.dat
 # ./operateArrays frameSize numPhysical numVirtual pageReplacement tableType pageTablePrintInt diskFileName.dat
-
 
 run_only:
 	./bin/operateArrays
@@ -15,10 +15,9 @@ clean:
 	rm -f bin/**
 
 debug:
-	g++ -pthread -Wall -g src/server.c src/common.c -lm -o bin/server
-	g++ -pthread -Wall -g src/servant.c src/common.c -lm -o bin/servant
-	g++ -pthread -Wall -g src/client.c src/common.c -lm -o bin/client
-# gdb -q ./bin/server
+	g++ -pthread -Wall -g main.cpp src/disk.cpp src/memory.cpp src/utils.cpp src/info.cpp -lm -o bin/operateArrays
+
+# gdb -q ./bin/operateArrays
 
 valgrind:
 	g++ -pthread -Wall main.cpp src/server.c src/common.c -lm -o bin/server

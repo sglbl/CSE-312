@@ -1,57 +1,53 @@
-// #ifndef UTILS_H
-// #define UTILS_H
-// #include "memory.h"
+#ifndef UTILS_H
+#define UTILS_H
+#include "memory.h"
+#include "disk.h"
 
-// enum MultiplicationAlgo{
-//     MATRIX_BY_VECTOR = 0,
-//     VECTOR_BY_T = 1
-// };
+enum MultiplicationAlgo{
+    MATRIX_BY_VECTOR = 0,
+    VECTOR_BY_T = 1
+};
 
-// enum MultiplicationType{
-//     ROW_BY_COLUMN = 0,
-//     COLUMN_BY_COLUMN = 1
-// };
+enum MultiplicationType{
+    ROW_BY_COLUMN = 0,
+    COLUMN_BY_COLUMN = 1
+};
 
-// enum SummationType{
-//     ROW_SUMM = 0,
-//     COLUMN_SUMM = 1
-// };
+enum SummationType{
+    ROW_SUMM = 0,
+    COLUMN_SUMM = 1
+};
 
-// typedef struct ThreadInfo{
-//     int thread_id;
-//     int page_frame;
-//     MultiplicationAlgo multiplication_algo;
-//     MultiplicationType multiplication_type;
-//     SummationType summation_type;
-//     int num_of_columns_to_calculate;
-// } ThreadInfo;
+typedef struct ThreadInfo{
+    int thread_id;
+    int page_frame;
+    MultiplicationAlgo multiplication_algo;
+    MultiplicationType multiplication_type;
+    SummationType summation_type;
+    int num_of_columns_to_calculate;
+    // bool is_found[5];
+} ThreadInfo;
 
-// typedef struct SearchNumberInfo{
-//     int numbers[5];
-//     bool is_found_linear[5];
-//     bool is_found_binary[5];
-// } SearchNumberInfo;
+typedef struct SearchNumberInfo{
+    int numbers[5];
+    bool is_found_linear_t1[5];
+    bool is_found_binary_t2[5];
+} SearchNumberInfo;
 
-// typedef struct PageTableEntry{
-// 	int referenced_bit;
-// 	int modified_bit;
-// 	int present;
-//     int page_frame_number;
-// } PageTableEntry;
+void print_error_exit(string error_message);
 
+void handle_page_fault();
 
-// void handle_page_fault();
+void thread_handler();
 
-// void fill_table_with_randoms(int* table, int table_size);
+void create_matrix_and_vectors_from_memory(int *memory, Info information);
 
-// void multiplication_handler(VirtualTable table);
+void* thread_job(void *arg);
 
-// void create_matrix_and_vectors_from_table(int *table);
+void* main_thread_job(void *arg);
 
-// void* thread_job(void *arg);
+void barrier();
 
-// void* main_thread_job(void *arg);
+void memory_handler(VirtualMemory virtualMemory, PhysicalMemory physicalMemory, PageTableEntry* pageTable, Disk disk, Info information, PrintStatInfo printStatInfo[3]);
 
-// void barrier();
-
-// #endif // UTILS_H
+#endif // UTILS_H

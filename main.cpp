@@ -4,6 +4,8 @@
 #include <string>
 #include "include/memory.h"
 #include "include/info.h"
+#include "include/disk.h"
+#include "include/utils.h"
 using namespace std;
 
 // static PageTableEntry* physical_frame;
@@ -12,11 +14,6 @@ static PageTableEntry* page_table;
 static VirtualMemory virtual_memory;
 static PhysicalMemory physical_memory;
 static PrintStatInfo print_stat_info[3];
-
-void print_error_exit(string message){
-    cerr << message;
-    exit(EXIT_FAILURE);
-}
 
 int main(int argc, char *argv[]){
     // initialize info class
@@ -30,6 +27,7 @@ int main(int argc, char *argv[]){
     // filling virtual memory with random numbers
     virtual_memory.fillMemoryWithRandoms(virtual_memory.getMemory(), information.getSizeOfVirtualMemory());
     cout << virtual_memory.getMemory()[0] << endl;
+
 
     // no need to fill physical memory because it will be filled with virtual memory pages from disk
     // physical_memory.fillMemoryWithRandoms(virtual_memory.getMemory(), information.getSizeOfVirtualMemory());
@@ -53,39 +51,28 @@ int main(int argc, char *argv[]){
     //     physical_frame[i].page_frame_number = -1;
     // }
 
-    information.fillPageTableWith0s(page_table, information.getFramesOfVirtualMemory());
+    page_table = (PageTableEntry*)calloc(information.getSizeOfVirtualMemory(), sizeof(PageTableEntry));
+    information.fillPageTableWith0s(&page_table, information.getSizeOfVirtualMemory());
     information.fillPrintStatWith0s(print_stat_info, 3);
 
-    // initialize disk file
-    FILE* disk_file = fopen(information.getDiskFileName().c_str(), "w");
-    if (disk_file == NULL){
-        print_error_exit("Error: Disk file could not be created.\n");
-    }
-    fclose(disk_file);
+    Disk disk;
+    disk.setFileName(information.getDiskFileName());
+    disk.createFile();
 
+    // writing information in virtual memory to disk file
+    disk.writeToFile(virtual_memory.getMemory(), information.getSizeOfVirtualMemory(), page_table);
 
+    // reading information from disk file to physical memory
+    // disk.readFromFile(information.getDiskFileName(), physical_memory.getMemory(), information.getSizeOfPhysicalMemory());
 
+    // creating matrix and vectors from virtual memory
+    create_matrix_and_vectors_from_memory(virtual_memory.getMemory(), information);
+
+    // memory handling initialization with page faults, page replacements, etc.
+    memory_handler(virtual_memory, physical_memory, page_table, disk, information, print_stat_info);
+
+    // create threads and start them for each algorithm
+    thread_handler();
+
+    return 0;
 }
-
-
-// int main(){
-//     // 64 kb virtual memory size
-//     int virtual_table_size = 64 * 1024;
-//     // 16 kb physical memory size
-//     int physical_table_size = 16 * 1024;
-//     // create virtual and physical memory table
-//     VirtualTable virtual_table(virtual_table_size);
-//     PhysicalTable physical_table(physical_table_size);
-
-//     // filling with random numbers
-//     fill_table_with_randoms(virtual_table.getTable(), virtual_table_size);
-//     cout << virtual_table.getTable()[0] << endl;
-
-//     create_matrix_and_vectors_from_table(virtual_table.getTable());
-//     // resultA[999][0] = 88;
-//     multiplication_handler(virtual_table);
-//     // summation_handler(virtual_table);
-
-//     cout << "Hello World!\n";
-//     return 0;
-// }
