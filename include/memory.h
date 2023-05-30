@@ -1,12 +1,13 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 #include "info.h"
+#include "disk.h"
 
 class Memory {
     public:
         Memory();
-        void setEntry(int entry, int value);
-        int getEntry(int entry);
+        void setElement(int element, int value);
+        int getElement(int element);
         void setMemorySize(int size);
         int getMemorySize();
         int* getMemory();
@@ -29,8 +30,11 @@ class PhysicalMemory : public Memory{
     public:
         PhysicalMemory();
         PhysicalMemory(int size);
+        void addPage(PageTableEntry page, int* page_elements);
+        inline void setDisk(Disk disk){ this->disk = disk; }
+        inline Disk getDisk(){ return disk; }
     private:
-        int var;
+        Disk disk;
 };
 
 #endif

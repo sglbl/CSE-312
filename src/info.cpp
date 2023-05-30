@@ -55,10 +55,10 @@ void Info::fillPageTableWith0s(PageTableEntry** page_table, int table_size){
 
     // initialize page table entries for physical and virtual memory
     for (int i = 0; i < table_size; i++){
-        (*page_table)[i].present = 1;
+        (*page_table)[i].present = 0;
         (*page_table)[i].modified_bit = 0;
         (*page_table)[i].referenced_bit = 0;
-        (*page_table)[i].page_frame_number = -1;
+        (*page_table)[i].page_frame_number = i;
         (*page_table)[i].last_time_used = -1;
     }
 

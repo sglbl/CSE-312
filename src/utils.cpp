@@ -5,6 +5,7 @@
 #include "../include/utils.h"
 #include "../include/memory.h"
 #include "../include/info.h"
+#include "../include/externs.h"
 using namespace std;
 
 #define MATRIX_ROW 1000
@@ -37,30 +38,70 @@ static pthread_mutex_t csMutex;
 static pthread_mutex_t barrierMutex;
 static pthread_cond_t barrierCond;
 
-void handle_page_fault(){
-    cout << "Page Fault!\n";
-}
-
 void print_error_exit(string message){
     cerr << message;
     exit(EXIT_FAILURE);
 }
 
-void create_matrix_and_vectors_from_memory(int *memory, Info information){
+// get for virtual memory
+int get(int index, string arg){
+    pthread_mutex_lock(&csMutex); // enter cs
+
+    int frame_size = information.getSizeOfFrame();
+    int page_table_index = index / frame_size; // for ex 2/4096 = 0 so it is in the first page
+    
+    // for ex. if we are looking for index 2, it is in the page_table index 0
+
+    int element;
+    if(page_table[page_table_index].present == 1){
+        // if it is in the physical memory no need to go to disk
+        // just use number in the virtual memory
+        // page_table_entry = page_table[page_table_index].page_frame_number;
+        element = virtual_memory.getElement(index);
+    }
+    else{
+        // if it is not in the physical memory, we need to go to disk
+        handle_page_fault(page_table_index); // tell main physical memory to get the page from disk
+        element = virtual_memory.getElement(index);
+    }
+
+    // int offset = index % frame_size; // for ex 2%4096 = 2 so it is in the second offset
+
+    pthread_mutex_unlock(&csMutex); // enter cs
+    return element;
+}
+
+void handle_page_fault(int page_table_index){
+    // tell main memory to get the page from disk
+    PageTableEntry page_entry = disk.getPage(page_table_index);
+    int *page_elements = disk.getPageFrameElements(page_table_index);
+    // update page table
+    page_table[page_table_index].present = 1;
+    page_table[page_table_index].page_frame_number = page_entry.page_frame_number;
+    // adding that page info and memory values to physical memory
+    physical_memory.addPage(page_entry, page_elements);
+
+}
+
+
+void create_matrix_and_vectors_from_memory(int *memory){
     int index = 0;
     for(int i = 0; i < MATRIX_ROW; ++i){
         for(int j = 0; j < MATRIX_COL; ++j){
-            matrixA[i][j] = memory[index++];
+            // matrixA[i][j] = memory[index++];
+            matrixA[i][j] = get(index++, "matrixA");
         }
     }
     for(int i = 0; i < VECTOR_ROW; ++i){
         for(int j = 0; j < RESULT_COL; ++j){
-            vectorA[i][j] = memory[index++];
+            // vectorA[i][j] = memory[index++];
+            vectorA[i][j] = get(index++, "vectorA");
         }
     }
     for(int i = 0; i < 1; ++i){
         for(int j = 0; j < VECTOR_COL; ++j){
-            vectorB[i][j] = memory[index++];
+            // vectorB[i][j] = memory[index++];
+            vectorB[i][j] = get(index++, "vectorB");
         }
     }
 
@@ -192,7 +233,7 @@ void* main_thread_job(void *arg){
         if(search_info.is_found_linear_t1[i]){
             cout << "Linear search for numbers[" << i << "] = " << search_info.numbers[i] << ": Found the element in the matrix\n";
         }else{
-            // fault_handler();
+            // handle_page_fault();
             cout << "Linear search for numbers[" << i << "] = " << search_info.numbers[i] << ": Element not found in the matrix\n";
         }
 
@@ -331,7 +372,7 @@ void barrier(){
     pthread_mutex_unlock(&barrierMutex);
 }
 
-void memory_handler(VirtualMemory virtualMemory, PhysicalMemory physicalMemory, PageTableEntry* pageTable, Disk disk, Info information, PrintStatInfo printStatInfo[3]){
+void memory_handler(VirtualMemory virtual_memory, PhysicalMemory physicalMemory, PageTableEntry* pageTable, Disk disk, Info information, PrintStatInfo printStatInfo[3]){
     // memory handling to handle page faults, page replacements, disk etc.
     int pageFaultCount = 0;
     int diskReadCount = 0;

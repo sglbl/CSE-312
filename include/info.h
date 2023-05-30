@@ -35,7 +35,7 @@ class Info {
 typedef struct PageTableEntry{
 	int referenced_bit;
 	int modified_bit;
-	int present;
+	int present; // valid bit
     int page_frame_number;
     int last_time_used; // for clock algos like second chance
 } PageTableEntry;

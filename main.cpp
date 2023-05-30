@@ -6,21 +6,25 @@
 #include "include/info.h"
 #include "include/disk.h"
 #include "include/utils.h"
+#include "include/externs.h"
 using namespace std;
 
-// static PageTableEntry* physical_frame;
-// static PageTableEntry* virtual_pages;
-static PageTableEntry* page_table;
-static VirtualMemory virtual_memory;
-static PhysicalMemory physical_memory;
-static PrintStatInfo print_stat_info[3];
+// external definitions are in extern.h
+PageTableEntry* page_table;
+VirtualMemory virtual_memory;
+PhysicalMemory physical_memory;
+PrintStatInfo print_stat_info[3];
+Info information;
+Disk disk;
 
 int main(int argc, char *argv[]){
-    // initialize info class
-    Info information;
     // writing arguments to info class
     information.argument_handler(argc, argv);
     // initialize memory class using *arguments*.
+
+    // virtual_memory = VirtualMemory();
+    // physical_memory = PhysicalMemory();
+
     virtual_memory.setMemorySize(information.getSizeOfVirtualMemory());
     physical_memory.setMemorySize(information.getSizeOfPhysicalMemory());
 
@@ -51,22 +55,21 @@ int main(int argc, char *argv[]){
     //     physical_frame[i].page_frame_number = -1;
     // }
 
-    page_table = (PageTableEntry*)calloc(information.getSizeOfVirtualMemory(), sizeof(PageTableEntry));
-    information.fillPageTableWith0s(&page_table, information.getSizeOfVirtualMemory());
+    page_table = (PageTableEntry*)calloc(information.getPagesOfVirtualMemory(), sizeof(PageTableEntry));
+    information.fillPageTableWith0s(&page_table, information.getPagesOfVirtualMemory());
     information.fillPrintStatWith0s(print_stat_info, 3);
 
-    Disk disk;
     disk.setFileName(information.getDiskFileName());
     disk.createFile();
 
     // writing information in virtual memory to disk file
-    disk.writeToFile(virtual_memory.getMemory(), information.getSizeOfVirtualMemory(), page_table);
+    disk.writeToFile(virtual_memory.getMemory(), information.getSizeOfVirtualMemory(), page_table, information.getPagesOfVirtualMemory());
 
     // reading information from disk file to physical memory
     // disk.readFromFile(information.getDiskFileName(), physical_memory.getMemory(), information.getSizeOfPhysicalMemory());
 
     // creating matrix and vectors from virtual memory
-    create_matrix_and_vectors_from_memory(virtual_memory.getMemory(), information);
+    create_matrix_and_vectors_from_memory(virtual_memory.getMemory());
 
     // memory handling initialization with page faults, page replacements, etc.
     memory_handler(virtual_memory, physical_memory, page_table, disk, information, print_stat_info);

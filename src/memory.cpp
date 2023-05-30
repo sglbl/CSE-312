@@ -1,12 +1,11 @@
 #include "../include/memory.h"
 #include "../include/info.h"
+#include "../include/externs.h"
 #include <cstdlib>
 #include <random>
 using namespace std;
 
-/**
- * PAGE TABLE
- */
+
 Memory::Memory()
 {
     // The virtual memory memory stores virtual memory addresses.
@@ -14,14 +13,14 @@ Memory::Memory()
     memory = nullptr;
 }
 
-void Memory::setEntry(int entry, int value)
+void Memory::setElement(int index, int value)
 {
-    memory[entry] = value;
+    memory[index] = value;
 }
 
-int Memory::getEntry(int entry)
+int Memory::getElement(int index)
 {
-    return memory[entry];
+    return memory[index];
 }
 
 void Memory::setMemorySize(int size)
@@ -79,4 +78,21 @@ PhysicalMemory::PhysicalMemory(){
 }
 PhysicalMemory::PhysicalMemory(int size){
     setMemorySize(size);
+}
+
+void PhysicalMemory::addPage(PageTableEntry page, int* page_elements){
+    // add page to physical memory
+    int page_frame_number = page.page_frame_number;
+    int size_of_frame = information.getSizeOfFrame();
+    for(int i = 0; i < size_of_frame; i++){
+        setElement(page_frame_number * size_of_frame + i, page_elements[i]);
+        virtual_memory.setElement(page_frame_number * size_of_frame + i, page_elements[i]);
+    }
+    // update page table
+    page_table[page_frame_number].present = 1;
+    page_table[page_frame_number].referenced_bit = 1;
+    page_table[page_frame_number].modified_bit = 0;
+    page_table[page_frame_number].page_frame_number = page_frame_number;
+    // update file
+    disk.writePage(page_frame_number, page_elements);
 }
