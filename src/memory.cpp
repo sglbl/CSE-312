@@ -86,13 +86,37 @@ void PhysicalMemory::addPage(PageTableEntry page, int* page_elements){
     int size_of_frame = information.getSizeOfFrame();
     for(int i = 0; i < size_of_frame; i++){
         setElement(page_frame_number * size_of_frame + i, page_elements[i]);
-        virtual_memory.setElement(page_frame_number * size_of_frame + i, page_elements[i]);
+        // virtual_memory.setElement(page_frame_number * size_of_frame + i, page_elements[i]);
     }
     // update page table
+    page_table[page_frame_number].page_frame_number = page_frame_number;
     page_table[page_frame_number].present = 1;
     page_table[page_frame_number].referenced_bit = 1;
     page_table[page_frame_number].modified_bit = 0;
-    page_table[page_frame_number].page_frame_number = page_frame_number;
-    // update file
-    disk.writePage(page_frame_number, page_elements);
+    cout << "[INFO: Page added to physical memory since it was not present]\n";
+}
+
+bool PhysicalMemory::isPagePresent(int page_frame_number){
+    return page_table[page_frame_number].present;
+}
+
+void PhysicalMemory::removePage(int page_frame_number){
+    // check if page is present
+    if (isPagePresent(page_frame_number)){
+        // remove page from physical memory
+        int size_of_frame = information.getSizeOfFrame();
+        for(int i = 0; i < size_of_frame; i++){
+            setElement(page_frame_number * size_of_frame + i, 0);
+            // virtual_memory.setElement(page_frame_number * size_of_frame + i, 0);
+        }
+        // update page table
+        page_table[page_frame_number].page_frame_number = page_frame_number;
+        page_table[page_frame_number].present = 0;
+        page_table[page_frame_number].referenced_bit = 0;
+        cout << "[INFO: Page removed from physical memory]\n";
+    }
+    else{
+        cout << "[INFO: Page not present in physical memory so it cannot be removed]\n";
+    }
+
 }

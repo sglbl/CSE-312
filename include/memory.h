@@ -6,8 +6,8 @@
 class Memory {
     public:
         Memory();
-        void setElement(int element, int value);
-        int getElement(int element);
+        void setElement(int index, int value);
+        int getElement(int index);
         void setMemorySize(int size);
         int getMemorySize();
         int* getMemory();
@@ -22,8 +22,6 @@ class VirtualMemory : public Memory{
     public:
         VirtualMemory();
         VirtualMemory(int size);
-    private:
-        int var;
 };
 
 class PhysicalMemory : public Memory{
@@ -31,10 +29,8 @@ class PhysicalMemory : public Memory{
         PhysicalMemory();
         PhysicalMemory(int size);
         void addPage(PageTableEntry page, int* page_elements);
-        inline void setDisk(Disk disk){ this->disk = disk; }
-        inline Disk getDisk(){ return disk; }
-    private:
-        Disk disk;
+        void removePage(int page_frame_number);
+        bool isPagePresent(int page_frame_number);
 };
 
 #endif

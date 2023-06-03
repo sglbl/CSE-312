@@ -36,7 +36,7 @@ typedef struct SearchNumberInfo{
 
 void print_error_exit(string error_message);
 
-void handle_page_fault(int page_table_index);
+void handle_page_fault(int page_table_index, string algorithm);
 
 void thread_handler();
 
@@ -48,10 +48,10 @@ void* main_thread_job(void *arg);
 
 void barrier();
 
-void memory_handler(VirtualMemory virtualMemory, PhysicalMemory physicalMemory, PageTableEntry* pageTable, Disk disk, Info information, PrintStatInfo printStatInfo[3]);
+// void memory_handler(VirtualMemory virtualMemory, PhysicalMemory physicalMemory, PageTableEntry* pageTable, Disk disk, Info information, PrintStatInfo printStatInfo[3]);
 
-void handle_page_fault(int page_table_index);
+int get(int index, string algorithm);
 
-int get(int index, string arg);
+void set(int index, int value, string algorithm);
 
 #endif // UTILS_H

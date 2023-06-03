@@ -9,7 +9,7 @@
 #include "include/externs.h"
 using namespace std;
 
-// external definitions are in extern.h
+// external definitions are in externs.h
 PageTableEntry* page_table;
 VirtualMemory virtual_memory;
 PhysicalMemory physical_memory;
@@ -21,9 +21,6 @@ int main(int argc, char *argv[]){
     // writing arguments to info class
     information.argument_handler(argc, argv);
     // initialize memory class using *arguments*.
-
-    // virtual_memory = VirtualMemory();
-    // physical_memory = PhysicalMemory();
 
     virtual_memory.setMemorySize(information.getSizeOfVirtualMemory());
     physical_memory.setMemorySize(information.getSizeOfPhysicalMemory());
@@ -59,11 +56,13 @@ int main(int argc, char *argv[]){
     information.fillPageTableWith0s(&page_table, information.getPagesOfVirtualMemory());
     information.fillPrintStatWith0s(print_stat_info, 3);
 
+    cout << "page vm size: " << information.getPagesOfVirtualMemory() << endl;
+    cout << "information.getSizeOfVirtualMemory() " << information.getSizeOfVirtualMemory() << endl;
     disk.setFileName(information.getDiskFileName());
     disk.createFile();
 
     // writing information in virtual memory to disk file
-    disk.writeToFile(virtual_memory.getMemory(), information.getSizeOfVirtualMemory(), page_table, information.getPagesOfVirtualMemory());
+    disk.writeToFile(virtual_memory.getMemory(), information.getSizeOfVirtualMemory(), information.getSizeOfFrame());
 
     // reading information from disk file to physical memory
     // disk.readFromFile(information.getDiskFileName(), physical_memory.getMemory(), information.getSizeOfPhysicalMemory());

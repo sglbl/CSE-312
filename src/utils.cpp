@@ -45,63 +45,145 @@ void print_error_exit(string message){
 
 // get for virtual memory
 int get(int index, string arg){
+    int element = 0;
     pthread_mutex_lock(&csMutex); // enter cs
 
-    int frame_size = information.getSizeOfFrame();
-    int page_table_index = index / frame_size; // for ex 2/4096 = 0 so it is in the first page
-    
-    // for ex. if we are looking for index 2, it is in the page_table index 0
-
-    int element;
-    if(page_table[page_table_index].present == 1){
-        // if it is in the physical memory no need to go to disk
-        // just use number in the virtual memory
-        // page_table_entry = page_table[page_table_index].page_frame_number;
-        element = virtual_memory.getElement(index);
+    if(arg == "clock"){
+        int frame_size = information.getSizeOfFrame();
+        int page_table_index = index / frame_size; // for ex 2/4096 = 0 so it is in the first page
+        
+        // for ex. if we are looking for index 2, it is in the page_table index 0
+        if(page_table[page_table_index].present == 1){
+            // if it is in the physical memory no need to go to disk
+            // just use number in the virtual memory
+            element = virtual_memory.getElement(index);
+        }
+        else{   
+            // if it is not in the physical memory, we need to go to disk
+            handle_page_fault(page_table_index, "clock"); // tell main physical memory to get the page from disk
+            element = virtual_memory.getElement(index);
+        }
+        // int offset = index % frame_size; // for ex 2%4096 = 2 so it is in the second offset
     }
-    else{
-        // if it is not in the physical memory, we need to go to disk
-        handle_page_fault(page_table_index); // tell main physical memory to get the page from disk
-        element = virtual_memory.getElement(index);
-    }
-
-    // int offset = index % frame_size; // for ex 2%4096 = 2 so it is in the second offset
 
     pthread_mutex_unlock(&csMutex); // enter cs
     return element;
 }
 
-void handle_page_fault(int page_table_index){
-    // tell main memory to get the page from disk
-    PageTableEntry page_entry = disk.getPage(page_table_index);
-    int *page_elements = disk.getPageFrameElements(page_table_index);
-    // update page table
-    page_table[page_table_index].present = 1;
-    page_table[page_table_index].page_frame_number = page_entry.page_frame_number;
-    // adding that page info and memory values to physical memory
-    physical_memory.addPage(page_entry, page_elements);
+void clock_algorithm(){
+    // checking how frequently page faults are and depending on 
+    // the page faults how many times I moved from front of queue to back of queue
+    
+    /** INFO: Clock algorithm
+        loaded pages are ordered in a fifo list, oldest page is at the front
+        when oldest page is selected for replacement, (m is unimportant)
+        if r==1 get second chance, put it end of queue and set r bit to 0 (make youngest)
+        if r==0, page is replaced; set r=0; move page tail of fifo list; check next-oldest
+    */
+    string table_type = information.getTableType();
+    if(table_type == "regular" || table_type == "normal"){
+        while(page_table->referenced_bit == 1){
+            page_table->referenced_bit = 0;
+            page_table = page_table->next;
+            // create LINKED LIST FOR PAGE TABLE 
+        }
+    }
+
 
 }
 
+void handle_page_fault(int page_table_index, string algorithm){
+    cout << "\n[INFO: Page fault occured for page table index " 
+         << page_table_index << ", reading from disk]\n";
+    // tell main memory to get the page from disk
+    PageTableEntry page_table_entry = disk.getPage(page_table_index);
+    int *page_elements = disk.getPageFrameElements(page_table_index);
+    
+    
+    // update page table
+    page_table[page_table_index].present = 1;
+    if(page_table_entry.page_frame_number > information.getSizeOfFrame()){
+        if(algorithm == "clock")
+            clock_algorithm();
+    }
+    cout << "page_table_entry.page_frame_number = " << page_table_entry.page_frame_number << "\n";
+    page_table[page_table_index].page_frame_number = page_table_entry.page_frame_number;
+    // adding that page info and memory values to physical memory
+    physical_memory.addPage(page_table_entry, page_elements);
+    disk.writeToFile(information.getSizeOfVirtualMemory(), information.getSizeOfFrame());
+    
+        
+        
+        // // copy page elements to physical memory from page_table_index )
+        // for(int i = 0; i < information.getSizeOfFrame(); ++i){
+        //     physical_memory.setElement(
+        //         page_table_entry.page_frame_number * information.getSizeOfFrame() + i, // index
+        //         page_elements[i] // value
+        //     );
+        // }
+
+        // // now we need to update the page table entry for the page that we just added
+        // // we need to set the reference bit to 1
+        // // we need to set the dirty bit to 0
+        // page_table[page_table_index].reference_bit = 1;
+        // page_table[page_table_index].dirty_bit = 0;
+
+}
+
+void set(int index, int value, string arg){
+    pthread_mutex_lock(&csMutex); // enter cs
+
+    if(arg == "clock"){
+        int frame_size = information.getSizeOfFrame();
+        int page_table_index = index / frame_size; // for ex 2/4096 = 0 so it is in the first page
+        virtual_memory.setElement(index, value);
+        // since it is set, we need to update the dirty bit
+        page_table[page_table_index].modified_bit = 1;
+        // if(page_table[page_table_index].modified_bit/*dirty bit*/ == 1)
+        disk.writeToFile(information.getSizeOfVirtualMemory(), information.getSizeOfFrame());
+
+        // remove the page that changed value is in
+        cout << "[INFO: Removing page table index " << page_table_index << " from physical memory]\n";
+        physical_memory.removePage(page_table_index);
+        // update the page table
+
+        
+        // add the page that changed value is in
+        // PageTableEntry page_table_entry = disk.getPage(page_table_index);
+        // int *page_elements = disk.getPageFrameElements(page_table_index);
+        // physical_memory.addPage(page_table_entry, page_elements);
+    }
+
+    pthread_mutex_unlock(&csMutex); // enter cs
+}
+
+void fill_physical_memory(){
+    // fill physical memory with pages from disk
+    for(int i = 0; i < information.getSizeOfPhysicalMemory(); ++i){
+        PageTableEntry page_table_entry = disk.getPage(i);
+        int *page_elements = disk.getPageFrameElements(i);
+        physical_memory.addPage(page_table_entry, page_elements);
+    }
+}
 
 void create_matrix_and_vectors_from_memory(int *memory){
     int index = 0;
     for(int i = 0; i < MATRIX_ROW; ++i){
         for(int j = 0; j < MATRIX_COL; ++j){
             // matrixA[i][j] = memory[index++];
-            matrixA[i][j] = get(index++, "matrixA");
+            matrixA[i][j] = get(index++, "clock");
         }
     }
     for(int i = 0; i < VECTOR_ROW; ++i){
         for(int j = 0; j < RESULT_COL; ++j){
             // vectorA[i][j] = memory[index++];
-            vectorA[i][j] = get(index++, "vectorA");
+            vectorA[i][j] = get(index++, "clock");
         }
     }
     for(int i = 0; i < 1; ++i){
         for(int j = 0; j < VECTOR_COL; ++j){
             // vectorB[i][j] = memory[index++];
-            vectorB[i][j] = get(index++, "vectorB");
+            vectorB[i][j] = get(index++, "clock");
         }
     }
 
@@ -372,18 +454,18 @@ void barrier(){
     pthread_mutex_unlock(&barrierMutex);
 }
 
-void memory_handler(VirtualMemory virtual_memory, PhysicalMemory physicalMemory, PageTableEntry* pageTable, Disk disk, Info information, PrintStatInfo printStatInfo[3]){
-    // memory handling to handle page faults, page replacements, disk etc.
-    int pageFaultCount = 0;
-    int diskReadCount = 0;
-    int diskWriteCount = 0;
-    int pageReplacementCount = 0;
+// void memory_handler(VirtualMemory virtual_memory, PhysicalMemory physicalMemory, PageTableEntry* pageTable, Disk disk, Info information, PrintStatInfo printStatInfo[3]){
+//     // memory handling to handle page faults, page replacements, disk etc.
+//     int pageFaultCount = 0;
+//     int diskReadCount = 0;
+//     int diskWriteCount = 0;
+//     int pageReplacementCount = 0;
 
-    // // initializing the page table
-    // for(int i=0; i<information.N; i++){
-    //     pageTable[i].virtualPageNumber = i;
-    //     pageTable[i].valid = 0;
-    //     pageTable[i].dirty = 0;
-    //     pageTable[i].page_frame_number = -1;
-    // }
-}
+//     // // initializing the page table
+//     // for(int i=0; i<information.N; i++){
+//     //     pageTable[i].virtualPageNumber = i;
+//     //     pageTable[i].valid = 0;
+//     //     pageTable[i].dirty = 0;
+//     //     pageTable[i].page_frame_number = -1;
+//     // }
+// }

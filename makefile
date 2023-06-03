@@ -4,20 +4,31 @@ compile:
 	g++ -pthread -Wall main.cpp src/disk.cpp src/memory.cpp src/utils.cpp src/info.cpp -lm -o bin/operateArrays
 
 run: compile
-	./bin/operateArrays 4 5 10 LRU inverted 100 diskFileName.dat
+	./bin/operateArrays 12 5 10 LRU inverted 100 diskFileName.dat
+# ./bin/operateArrays 4 5 10 LRU inverted 100 diskFileName.dat
 # ./bin/operateArrays 12 5 10 LRU inverted 10000 diskFileName.dat
 # ./operateArrays frameSize numPhysical numVirtual pageReplacement tableType pageTablePrintInt diskFileName.dat
 
-run_only:
-	./bin/operateArrays
+sc:
+	g++ -pthread -Wall second_chance.cpp src/disk.cpp src/memory.cpp src/utils.cpp src/info.cpp -lm -o bin/sc
+	./bin/sc 1 1 2 SC inverted 100 diskFileName.dat
+# ./bin/sc 2 4 6 LRU inverted 100 diskFileName.dat
+# ./bin/sc 4 5 10 LRU inverted 100 diskFileName.dat
+# ./bin/sc frameSize numPhysical numVirtual pageReplacement tableType pageTablePrintInt diskFileName.dat
+
 
 clean:
 	rm -f bin/**
 
-debug:
-	g++ -pthread -Wall -g main.cpp src/disk.cpp src/memory.cpp src/utils.cpp src/info.cpp -lm -o bin/operateArrays
+debug_sc:
+	g++ -pthread -Wall -g second_chance.cpp src/disk.cpp src/memory.cpp src/utils.cpp src/info.cpp -lm -o bin/sc
+	gdb -q ./bin/sc 
+# 1 1 2 SC inverted 100 diskFileName.dat
 
-# gdb -q ./bin/operateArrays
+debug_operateArrays:
+	g++ -pthread -Wall -g main.cpp src/disk.cpp src/memory.cpp src/utils.cpp src/info.cpp -lm -o bin/operateArrays
+	gdb -q ./bin/operateArrays
+# r 12 5 10 LRU inverted 100 diskFileName.dat
 
 valgrind:
 	g++ -pthread -Wall main.cpp src/server.c src/common.c -lm -o bin/server

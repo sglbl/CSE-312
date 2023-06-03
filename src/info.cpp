@@ -46,6 +46,12 @@ void Info::argument_handler(int argc, char *argv[]){
     size_of_physical_memory = size_of_frame * frames_of_physical_memory; // 4096 frame size * 32 physical frame = 128KB int
     size_of_virtual_memory = size_of_frame * pages_of_virtual_memory; // 4096 frame size * 1024 virtual frame = 4MB int
 
+    // printing information
+    cout << "\n[INFO: Size of a frame: " << size_of_frame << " integers]\n";
+    cout << "[INFO: Number of frames in physical memory: " << frames_of_physical_memory << "]\n";
+    cout << "[INFO: Number of pages in virtual memory: " << pages_of_virtual_memory << "]\n";
+    cout << "[INFO: Size of physical memory: " << size_of_physical_memory << " integers]\n";
+    cout << "[INFO: Size of virtual memory: " << size_of_virtual_memory << " integers]\n\n";
 }
 
 void Info::fillPageTableWith0s(PageTableEntry** page_table, int table_size){

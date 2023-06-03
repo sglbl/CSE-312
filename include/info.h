@@ -33,10 +33,10 @@ class Info {
 };
 
 typedef struct PageTableEntry{
-	int referenced_bit;
-	int modified_bit;
-	int present; // valid bit
-    int page_frame_number;
+	int page_frame_number;
+    int present; // valid bit
+    int referenced_bit; // used (access) bit
+	int modified_bit; // dirty bit    
     int last_time_used; // for clock algos like second chance
 } PageTableEntry;
 
