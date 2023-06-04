@@ -5,6 +5,7 @@
 #include "../include/utils.h"
 #include "../include/info.h"
 #include "../include/memory.h"
+#include "../include/externs.h"
 using namespace std;
 
 void Info::argument_handler(int argc, char *argv[]){
@@ -54,25 +55,25 @@ void Info::argument_handler(int argc, char *argv[]){
     cout << "[INFO: Size of virtual memory: " << size_of_virtual_memory << " integers]\n\n";
 }
 
-void Info::fillPageTableWith0s(PageTableEntry** page_table, int table_size){
+void Info::fillPageTableWith0s(int table_size){
     // NOTE: When incorrect, it is attempting to access a member of a pointer without dereferencing it properly.
     // incorrect dereference: page_table[1]->present 
     // corrrect dereference: (*page_table)[1].present or (*page_table + 1)->present    
 
-    (*page_table)->next = NULL; 
-    PageTableEntry *temp = *page_table;
+    // page_table->next = NULL; 
+    PageTableEntry *temp = page_table;
     // initialize page table entries for physical and virtual memory
     for (int i = 0; i < table_size; i++){
-        (*page_table)->page_table_index = i;
-        (*page_table)->page_frame_number = -1;
-        (*page_table)->present = 0;
-        (*page_table)->modified_bit = 0;
-        (*page_table)->referenced_bit = 0;
-        (*page_table)->last_time_used = -1;
-        (*page_table)->next = (PageTableEntry*)malloc(sizeof(PageTableEntry));
-        (*page_table) = (*page_table)->next;
+        temp->page_table_index = i;
+        temp->page_frame_number = -1;
+        temp->present = 0;
+        temp->modified_bit = 0;
+        temp->referenced_bit = 0;
+        temp->last_time_used = -1;
+        temp->next = (PageTableEntry*)malloc(sizeof(PageTableEntry));
+        temp = temp->next;
     }
-    (*page_table) = temp;
+    // (*page_table) = temp;
 }
 
 void Info::fillPrintStatWith0s(PrintStatInfo* print_stat_info, int num_of_threads){

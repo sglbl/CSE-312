@@ -92,6 +92,7 @@ void PhysicalMemory::addPage(PageTableEntry page, int* page_elements){
     // setPTE(page_table, page_frame_number, page_frame_number, 1, 0, 0);
     // cout << "Pfn" << page_frame_number << endl;
     setPTE_present(page_table, page.page_table_index, 1);
+    setPTE_referenced(page_table, page.page_table_index, 1);
     setPTE_pfn(page_table, page.page_table_index, page_frame_number);
     cout << "[INFO: Page added to physical memory since it was not present]\n";
 }
@@ -136,22 +137,44 @@ int PhysicalMemory::getEmptyPageFrame(){
     // check frame numbers of all pte's, return first empty one
     int size_of_frame = information.getSizeOfFrame();
     int number_of_frames = information.getSizeOfPhysicalMemory() / size_of_frame;
-    for(int i = 0; i < number_of_frames; i++){
+
+    int pte_entry_counter = 0;
+    PageTableEntry *iter = page_table;
+    while(iter != NULL){
+        pte_entry_counter++;
+        iter = iter->next;
+    }
+
+    int *used = (int*)malloc(pte_entry_counter * sizeof(int));
+    iter = page_table;
+    for(int i = 0; iter != NULL; i++){
         int pte_frame_no = getPTE(page_table, i).page_frame_number;
-        if (pte_frame_no == -1)
+        used[i] = pte_frame_no;
+        iter = iter->next;
+    }
+
+    // find unused number in used array
+    for(int i = 0; i < number_of_frames; i++){
+        bool flag = false;
+        for (int j = 0; j < pte_entry_counter-1; j++){
+            // if i does not exist in used array, return it
+            if (i == used[j]){
+                flag = true;
+                break;
+            }
+        }
+        if (!flag){
             return i;
+        }
     }
     
     return -1;
 }
 
 bool PhysicalMemory::checkIsFull(){
-    int size_of_frame = information.getSizeOfFrame();
-    int number_of_frames = information.getSizeOfPhysicalMemory() / size_of_frame;
-    for(int i = 0; i < number_of_frames; i++){
-        int pte_present = getPTE(page_table, i).present;
-        if (!pte_present)
-            return false;
+    int check_return = getEmptyPageFrame();
+    if (check_return == -1){
+        return true;
     }
-    return true;
+    return false;
 }

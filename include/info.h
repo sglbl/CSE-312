@@ -10,7 +10,7 @@ struct PrintStatInfo; // forward declaration
 class Info {
     public:
         void argument_handler(int argc, char *argv[]);
-        void fillPageTableWith0s(struct PageTableEntry** table, int table_size);
+        void fillPageTableWith0s(int table_size);
         void fillPrintStatWith0s(PrintStatInfo* print_stat_info, int table_size);
         inline int getSizeOfFrame(){ return size_of_frame; }
         inline int getFramesOfPhysicalMemory(){ return frames_of_physical_memory; }

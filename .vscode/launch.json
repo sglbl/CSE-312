@@ -33,5 +33,33 @@
                 }
             ]
         },
+        {
+            "name": "gdb (operate)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/operateArrays",
+            "args": [// 4 5 10 LRU inverted 100 diskFileName.dat
+                "4",
+                "5",
+                "10",
+                "SC",
+                "normal",
+                "100",
+                "diskFileName.dat"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
     ]
 }

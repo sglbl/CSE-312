@@ -48,10 +48,9 @@ int get(int index, string arg){
     int element = 0;
     pthread_mutex_lock(&csMutex); // enter cs
 
-    if(arg == "clock"){
+    if(arg == "second_chance"){
         int frame_size = information.getSizeOfFrame();
         int page_table_index = index / frame_size; // for ex 2/4096 = 0 so it is in the first page
-        int page_frame_number = getPTE(page_table, page_table_index).page_frame_number;
         cout << "\nPage table index to look (index / frame size): " << index << "/" << frame_size << " = " << page_table_index << endl;
         // for ex. if we are looking for index 2, it is in the page_table index 0
         if(getPTE(page_table, page_table_index).present == 1){
@@ -61,10 +60,9 @@ int get(int index, string arg){
         }
         else{   
             // if it is not in the physical memory, we need to go to disk
-            handle_page_fault(page_table_index, "clock"); // tell main physical memory to get the page from disk
+            handle_page_fault(page_table_index, "second_chance"); // tell main physical memory to get the page from disk
             element = virtual_memory.getElement(index);
         }
-        // int offset = index % frame_size; // for ex 2%4096 = 2 so it is in the second offset
     }
 
     pthread_mutex_unlock(&csMutex); // enter cs
@@ -96,7 +94,6 @@ bool second_chance_algorithm(){
     if(table_type == "regular" || table_type == "normal"){
         PageTableEntry *iter = page_table;
         PageTableEntry* prev = NULL;
-        bool current_found = false;
         while(true){
             if(iter->referenced_bit == 1){ // means it is not the oldest page
                 write_to_file_flag = true;
@@ -107,6 +104,7 @@ bool second_chance_algorithm(){
                     page_table = iter->next;
                 else 
                     prev->next = iter->next;
+                write_to_file_flag = true;
                 break;
             }
             prev = iter;
@@ -118,26 +116,11 @@ bool second_chance_algorithm(){
         }
         // page to be removed print
         cout << "[INFO: Page to be removed: " << iter->page_table_index << "]\n";
-        
-        // now we have the oldest page.         
-        // write the page to be replaced to disk
-        // first get page from virtual memory
-        int page_table_index = iter->page_table_index;
-
-        // int *page_elements = virtual_memory.getPage(page_table_index);
-        // // then write it to disk
-        // disk.writePage(page_table_index, page_elements);
-
-        // update page table
-        // int page_frame_number = iter->page_frame_number;
-        // setPTE(page_table, page_table_index, page_frame_number, 0, 0, 0);
-
 
     }
     else if(table_type == "inverted"){
         cout << "todo\n";
     }
-
 
     // print page table order
     print_iter = page_table;
@@ -146,6 +129,7 @@ bool second_chance_algorithm(){
         cout << print_iter->page_table_index << " -> ";
         print_iter = print_iter->next;
     } cout << endl;
+    cout << "Write to file flag: " << write_to_file_flag << endl;
     return write_to_file_flag;
 }
 
@@ -161,31 +145,22 @@ void handle_page_fault(int page_table_index, string algorithm){
         cout << "[INFO: Replacement is needed since physical frames are full. "
              "Frame size " << information.getSizeOfFrame() << "]\n";
         // exit(EXIT_SUCCESS);
-        if(algorithm == "clock"){
+        if(algorithm == "second_chance"){
             int write_to_file_flag_if_theres_modified = second_chance_algorithm();
             if (write_to_file_flag_if_theres_modified)
                 disk.writeToFile(information.getSizeOfVirtualMemory(), information.getSizeOfFrame());
-            else
-                cout << "[INFO: No need to write to file since there is no modified page]\n";
-            physical_memory.printPagesInPhysicalMemory();
         }
     }
 
-    // update page table
-    // setPTE_present(page_table, page_table_index, 1);
-    // setPTE_pfn(page_table, page_table_index, page_table_entry.page_frame_number);
-    // adding that page info and memory values to physical memory
-    
     int frame_no = physical_memory.getEmptyPageFrame();
     page_table_entry.page_frame_number = frame_no;
-    cout << "fRAME NO: " << frame_no << "\n";
     physical_memory.addPage(page_table_entry, page_elements);        
 }
 
 void set(int index, int value, string arg){
     pthread_mutex_lock(&csMutex); // enter cs
 
-    if(arg == "clock"){
+    if(arg == "second_chance"){
         int frame_size = information.getSizeOfFrame();
         int page_table_index = index / frame_size; // for ex 2/4096 = 0 so it is in the first page
         virtual_memory.setElement(index, value);
@@ -223,19 +198,19 @@ void create_matrix_and_vectors_from_memory(int *memory){
     for(int i = 0; i < MATRIX_ROW; ++i){
         for(int j = 0; j < MATRIX_COL; ++j){
             // matrixA[i][j] = memory[index++];
-            matrixA[i][j] = get(index++, "clock");
+            matrixA[i][j] = get(index++, "second_chance");
         }
     }
     for(int i = 0; i < VECTOR_ROW; ++i){
         for(int j = 0; j < RESULT_COL; ++j){
             // vectorA[i][j] = memory[index++];
-            vectorA[i][j] = get(index++, "clock");
+            vectorA[i][j] = get(index++, "second_chance");
         }
     }
     for(int i = 0; i < 1; ++i){
         for(int j = 0; j < VECTOR_COL; ++j){
             // vectorB[i][j] = memory[index++];
-            vectorB[i][j] = get(index++, "clock");
+            vectorB[i][j] = get(index++, "second_chance");
         }
     }
 
@@ -250,7 +225,7 @@ void create_matrix_and_vectors_from_memory(int *memory){
 
 PageTableEntry getPTE(PageTableEntry *head, int index){
     PageTableEntry *current = head;
-    for(int i = 0; current != NULL; i++){
+    for(int i = 0; current->next != NULL; i++){
         if(i == index)
             break;
         current = current->next;
@@ -260,8 +235,8 @@ PageTableEntry getPTE(PageTableEntry *head, int index){
 
 PageTableEntry setPTE(PageTableEntry *head, int index, int pfn, int present, int modified, int referenced){
     PageTableEntry *current = head;
-    for(int i = 0; current != NULL; i++){
-        if(i == index)
+    for(int i = 0; current->next != NULL; i++){
+        if(i == index || current->next != NULL)
             break;
         current = current->next;
     }
@@ -274,7 +249,7 @@ PageTableEntry setPTE(PageTableEntry *head, int index, int pfn, int present, int
 
 PageTableEntry setPTE_pfn(PageTableEntry *head, int index, int bit){
     PageTableEntry *current = head;
-    for(int i = 0; current != NULL; i++){
+    for(int i = 0; current->next != NULL; i++){
         if(i == index)
             break;
         current = current->next;
@@ -285,7 +260,7 @@ PageTableEntry setPTE_pfn(PageTableEntry *head, int index, int bit){
 
 PageTableEntry setPTE_present(PageTableEntry *head, int index, int bit){
     PageTableEntry *current = head;
-    for(int i = 0; current != NULL; i++){
+    for(int i = 0; current->next != NULL; i++){
         if(i == index)
             break;
         current = current->next;
@@ -296,7 +271,7 @@ PageTableEntry setPTE_present(PageTableEntry *head, int index, int bit){
 
 PageTableEntry setPTE_modified(PageTableEntry *head, int index, int bit){
     PageTableEntry *current = head;
-    for(int i = 0; current != NULL; i++){
+    for(int i = 0; current->next != NULL; i++){
         if(i == index)
             break;
         current = current->next;
@@ -307,7 +282,7 @@ PageTableEntry setPTE_modified(PageTableEntry *head, int index, int bit){
 
 PageTableEntry setPTE_referenced(PageTableEntry *head, int index, int bit){
     PageTableEntry *current = head;
-    for(int i = 0; current != NULL; i++){
+    for(int i = 0; current->next != NULL; i++){
         if(i == index)
             break;
         current = current->next;
