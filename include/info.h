@@ -38,6 +38,7 @@ typedef struct PageTableEntry{
     int referenced_bit; // used (access) bit
 	int modified_bit; // dirty bit    
     int last_time_used; // for clock algos like second chance
+    struct PageTableEntry *next;
 } PageTableEntry;
 
 typedef struct PrintStatInfo{

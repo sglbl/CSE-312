@@ -62,7 +62,7 @@ int main(int argc, char *argv[]){
     disk.createFile();
 
     // writing information in virtual memory to disk file
-    disk.writeToFile(virtual_memory.getMemory(), information.getSizeOfVirtualMemory(), information.getSizeOfFrame());
+    disk.writeToFile(information.getSizeOfVirtualMemory(), information.getSizeOfFrame());
 
     // reading information from disk file to physical memory
     // disk.readFromFile(information.getDiskFileName(), physical_memory.getMemory(), information.getSizeOfPhysicalMemory());

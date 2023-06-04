@@ -59,15 +59,19 @@ void Info::fillPageTableWith0s(PageTableEntry** page_table, int table_size){
     // incorrect dereference: page_table[1]->present 
     // corrrect dereference: (*page_table)[1].present or (*page_table + 1)->present    
 
+    (*page_table)->next = NULL; 
+    PageTableEntry *temp = *page_table;
     // initialize page table entries for physical and virtual memory
     for (int i = 0; i < table_size; i++){
-        (*page_table)[i].present = 0;
-        (*page_table)[i].modified_bit = 0;
-        (*page_table)[i].referenced_bit = 0;
-        (*page_table)[i].page_frame_number = i;
-        (*page_table)[i].last_time_used = -1;
+        (*page_table)->present = 0;
+        (*page_table)->modified_bit = 0;
+        (*page_table)->referenced_bit = 0;
+        (*page_table)->page_frame_number = i;
+        (*page_table)->last_time_used = -1;
+        (*page_table)->next = (PageTableEntry*)malloc(sizeof(PageTableEntry));
+        (*page_table) = (*page_table)->next;
     }
-
+    (*page_table) = temp;
 }
 
 void Info::fillPrintStatWith0s(PrintStatInfo* print_stat_info, int num_of_threads){

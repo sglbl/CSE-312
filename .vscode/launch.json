@@ -6,25 +6,32 @@
     "configurations": [
         // gdb debugging using make file run command
         {
-            "name": "g++ - Build and debug active file",
+            "name": "gdb (Launch)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/operateArrays",
+            "program": "${workspaceFolder}/bin/sc",
             "args": [// 4 5 10 LRU inverted 100 diskFileName.dat
-                "4",
-                "5",
-                "10",
-                "LRU",
-                "inverted",
+                "1",
+                "1",
+                "2",
+                "SC",
+                "normal",
                 "100",
                 "diskFileName.dat"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": true,
+            "externalConsole": false,
             "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb"
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
         },
     ]
 }

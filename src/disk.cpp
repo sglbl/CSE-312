@@ -43,11 +43,11 @@ void Disk::writeToFile(int memory_size, int frame_size){
             // cout << i << " is i\n";
             // cout << "memory size is " << memory_size << endl;
             fprintf(disk_file, "%d,%d,%d,%d,%d\n", 
-                    page_table[page_counter].page_frame_number, 
-                    page_table[page_counter].present, // valid bit
-                    page_table[page_counter].referenced_bit, // used bit
-                    page_table[page_counter].modified_bit, // dirty bit            
-                    page_table[page_counter].last_time_used);
+                    getPTE(page_table, page_counter).page_frame_number, 
+                    getPTE(page_table, page_counter).present, // valid bit
+                    getPTE(page_table, page_counter).referenced_bit, // used bit
+                    getPTE(page_table, page_counter).modified_bit, // dirty bit            
+                    getPTE(page_table, page_counter).last_time_used);
             page_counter++;
             number_of_lines++;
         }

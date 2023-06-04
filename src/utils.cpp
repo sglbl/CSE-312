@@ -51,9 +51,9 @@ int get(int index, string arg){
     if(arg == "clock"){
         int frame_size = information.getSizeOfFrame();
         int page_table_index = index / frame_size; // for ex 2/4096 = 0 so it is in the first page
-        
+        cout << "\nPage table index to look (index / frame size): " << index << "/" << frame_size << " = " << page_table_index << endl;
         // for ex. if we are looking for index 2, it is in the page_table index 0
-        if(page_table[page_table_index].present == 1){
+        if(getPTE(page_table, page_table_index).present == 1){
             // if it is in the physical memory no need to go to disk
             // just use number in the virtual memory
             element = virtual_memory.getElement(index);
@@ -70,25 +70,81 @@ int get(int index, string arg){
     return element;
 }
 
-void clock_algorithm(){
+void second_chance_algorithm(){
     // checking how frequently page faults are and depending on 
     // the page faults how many times I moved from front of queue to back of queue
     
-    /** INFO: Clock algorithm
+    /** INFO: second_chance_algorithm algorithm
         loaded pages are ordered in a fifo list, oldest page is at the front
         when oldest page is selected for replacement, (m is unimportant)
         if r==1 get second chance, put it end of queue and set r bit to 0 (make youngest)
         if r==0, page is replaced; set r=0; move page tail of fifo list; check next-oldest
     */
+    cout << "[INFO: Applying Second Chance (SC) page replacement algorithm]\n";
+    // print page table order
+    cout << "Linked list order before SC: \n";
+    PageTableEntry *print_iter = page_table;
+    while(print_iter != NULL){
+        cout << print_iter->page_frame_number << " -> ";
+        print_iter = print_iter->next;
+    } cout << "\n";
+
     string table_type = information.getTableType();
     if(table_type == "regular" || table_type == "normal"){
-        while(page_table->referenced_bit == 1){
-            page_table->referenced_bit = 0;
-            page_table = page_table->next;
-            // create LINKED LIST FOR PAGE TABLE 
+        PageTableEntry *iter = page_table;
+        PageTableEntry* prev = NULL;
+        while(true){
+            if(iter->referenced_bit == 1){ // means it is not the oldest page
+                iter->referenced_bit = 0;
+                // move this page to the end of the queue
+                prev = iter;
+                iter = iter->next;
+            }
+            else{ // means it is (one of) the oldest page
+                if(prev == NULL) // if replaced page is the first page in the queue
+                    page_table = iter->next;
+                else 
+                    prev->next = iter->next;
+            }
+            if(iter->next != NULL) // if not last page
+                iter = iter->next; 
+            else
+                iter = page_table; // if last page, start from the beginning
+            // Check if no page to be replaced
+            if (iter == page_table) {
+                break;
+            }
         }
+        // page to be removed print
+        cout << "[INFO: Page to be removed: " << iter->page_frame_number << "]\n";
+        
+        // now we have the oldest page.         
+        // write the page to be replaced to disk
+        // first get page from virtual memory
+        int page_table_index = iter->page_frame_number;
+
+        // int *page_elements = virtual_memory.getPage(page_table_index);
+        // // then write it to disk
+        // disk.writePage(page_table_index, page_elements);
+
+        // update page table
+        int page_frame_number = iter->page_frame_number;
+        setPTE(page_table, page_table_index, page_frame_number, 0, 0, 0);
+
+
+    }
+    else if(table_type == "inverted"){
+        cout << "todo\n";
     }
 
+
+    // print page table order
+    print_iter = page_table;
+    cout << "Linked list order after SC: \n";
+    while(print_iter != NULL){
+        cout << print_iter->page_frame_number << " -> ";
+        print_iter = print_iter->next;
+    } cout << endl;
 
 }
 
@@ -99,18 +155,22 @@ void handle_page_fault(int page_table_index, string algorithm){
     PageTableEntry page_table_entry = disk.getPage(page_table_index);
     int *page_elements = disk.getPageFrameElements(page_table_index);
     
-    
-    // update page table
-    page_table[page_table_index].present = 1;
     if(page_table_entry.page_frame_number > information.getSizeOfFrame()){
-        if(algorithm == "clock")
-            clock_algorithm();
+        cout << "[INFO: Replacement is needed since physical frames are full. Frame number " << page_table_entry.page_frame_number 
+             << " is bigger than frame size " << information.getSizeOfFrame() << "]\n";
+        // exit(EXIT_SUCCESS);
+        if(algorithm == "clock"){
+            second_chance_algorithm();
+            disk.writeToFile(information.getSizeOfVirtualMemory(), information.getSizeOfFrame());
+        }
     }
-    cout << "page_table_entry.page_frame_number = " << page_table_entry.page_frame_number << "\n";
-    page_table[page_table_index].page_frame_number = page_table_entry.page_frame_number;
+
+    // update page table
+    setPTE_present(page_table, page_table_index, 1);
+    setPTE_pfn(page_table, page_table_index, page_table_entry.page_frame_number);
     // adding that page info and memory values to physical memory
     physical_memory.addPage(page_table_entry, page_elements);
-    disk.writeToFile(information.getSizeOfVirtualMemory(), information.getSizeOfFrame());
+    // disk.writeToFile(information.getSizeOfVirtualMemory(), information.getSizeOfFrame());
     
         
         
@@ -138,7 +198,7 @@ void set(int index, int value, string arg){
         int page_table_index = index / frame_size; // for ex 2/4096 = 0 so it is in the first page
         virtual_memory.setElement(index, value);
         // since it is set, we need to update the dirty bit
-        page_table[page_table_index].modified_bit = 1;
+        setPTE_modified(page_table, page_table_index, 1);
         // if(page_table[page_table_index].modified_bit/*dirty bit*/ == 1)
         disk.writeToFile(information.getSizeOfVirtualMemory(), information.getSizeOfFrame());
 
@@ -194,6 +254,74 @@ void create_matrix_and_vectors_from_memory(int *memory){
         }
     }
 
+}
+
+PageTableEntry getPTE(PageTableEntry *head, int index){
+    PageTableEntry *current = head;
+    for(int i = 0; current != NULL; i++){
+        if(i == index)
+            break;
+        current = current->next;
+    }
+    return *current;
+}
+
+PageTableEntry setPTE(PageTableEntry *head, int index, int pfn, int present, int modified, int referenced){
+    PageTableEntry *current = head;
+    for(int i = 0; current != NULL; i++){
+        if(i == index)
+            break;
+        current = current->next;
+    }
+    current->page_frame_number = pfn;
+    current->present = present;
+    current->modified_bit = modified;
+    current->referenced_bit = referenced;
+    return *current;
+}
+
+PageTableEntry setPTE_pfn(PageTableEntry *head, int index, int bit){
+    PageTableEntry *current = head;
+    for(int i = 0; current != NULL; i++){
+        if(i == index)
+            break;
+        current = current->next;
+    }
+    current->page_frame_number = bit;
+    return *current;
+}
+
+PageTableEntry setPTE_present(PageTableEntry *head, int index, int bit){
+    PageTableEntry *current = head;
+    for(int i = 0; current != NULL; i++){
+        if(i == index)
+            break;
+        current = current->next;
+    }
+    current->present = bit;
+    return *current;
+}
+
+PageTableEntry setPTE_modified(PageTableEntry *head, int index, int bit){
+    PageTableEntry *current = head;
+    for(int i = 0; current != NULL; i++){
+        if(i == index)
+            break;
+        current = current->next;
+    }
+    current->modified_bit = bit;
+    return *current;
+}
+
+PageTableEntry setPTE_referenced(PageTableEntry *head, int index, int bit){
+    PageTableEntry *current = head;
+    for(int i = 0; current != NULL; i++){
+        if(i == index)
+            break;
+        current = current->next;
+    }
+    current->referenced_bit = bit;
+    return *current;
 }
 
 void thread_handler(){

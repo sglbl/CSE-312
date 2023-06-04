@@ -11,7 +11,7 @@ run: compile
 
 sc:
 	g++ -pthread -Wall second_chance.cpp src/disk.cpp src/memory.cpp src/utils.cpp src/info.cpp -lm -o bin/sc
-	./bin/sc 1 1 2 SC inverted 100 diskFileName.dat
+	./bin/sc 1 1 2 SC normal 100 diskFileName.dat
 # ./bin/sc 2 4 6 LRU inverted 100 diskFileName.dat
 # ./bin/sc 4 5 10 LRU inverted 100 diskFileName.dat
 # ./bin/sc frameSize numPhysical numVirtual pageReplacement tableType pageTablePrintInt diskFileName.dat
@@ -21,8 +21,8 @@ clean:
 	rm -f bin/**
 
 debug_sc:
-	g++ -pthread -Wall -g second_chance.cpp src/disk.cpp src/memory.cpp src/utils.cpp src/info.cpp -lm -o bin/sc
-	gdb -q ./bin/sc 
+	g++ -pthread -Wall -g3 -DDEBUG second_chance.cpp src/disk.cpp src/memory.cpp src/utils.cpp src/info.cpp -lm -o bin/sc
+# gdb -q ./bin/sc 
 # 1 1 2 SC inverted 100 diskFileName.dat
 
 debug_operateArrays:

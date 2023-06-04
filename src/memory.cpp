@@ -1,5 +1,6 @@
 #include "../include/memory.h"
 #include "../include/info.h"
+#include "../include/utils.h"
 #include "../include/externs.h"
 #include <cstdlib>
 #include <random>
@@ -89,15 +90,12 @@ void PhysicalMemory::addPage(PageTableEntry page, int* page_elements){
         // virtual_memory.setElement(page_frame_number * size_of_frame + i, page_elements[i]);
     }
     // update page table
-    page_table[page_frame_number].page_frame_number = page_frame_number;
-    page_table[page_frame_number].present = 1;
-    page_table[page_frame_number].referenced_bit = 1;
-    page_table[page_frame_number].modified_bit = 0;
+    setPTE(page_table, page_frame_number, page_frame_number, 1, 1, 0);
     cout << "[INFO: Page added to physical memory since it was not present]\n";
 }
 
 bool PhysicalMemory::isPagePresent(int page_frame_number){
-    return page_table[page_frame_number].present;
+    return getPTE(page_table, page_frame_number).present;
 }
 
 void PhysicalMemory::removePage(int page_frame_number){
@@ -110,9 +108,7 @@ void PhysicalMemory::removePage(int page_frame_number){
             // virtual_memory.setElement(page_frame_number * size_of_frame + i, 0);
         }
         // update page table
-        page_table[page_frame_number].page_frame_number = page_frame_number;
-        page_table[page_frame_number].present = 0;
-        page_table[page_frame_number].referenced_bit = 0;
+        setPTE(page_table, page_frame_number, page_frame_number, 0, 0, 1);
         cout << "[INFO: Page removed from physical memory]\n";
     }
     else{
