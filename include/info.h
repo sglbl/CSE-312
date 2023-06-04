@@ -33,6 +33,7 @@ class Info {
 };
 
 typedef struct PageTableEntry{
+    int page_table_index;
 	int page_frame_number;
     int present; // valid bit
     int referenced_bit; // used (access) bit

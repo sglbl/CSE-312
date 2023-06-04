@@ -51,6 +51,7 @@ int get(int index, string arg){
     if(arg == "clock"){
         int frame_size = information.getSizeOfFrame();
         int page_table_index = index / frame_size; // for ex 2/4096 = 0 so it is in the first page
+        int page_frame_number = getPTE(page_table, page_table_index).page_frame_number;
         cout << "\nPage table index to look (index / frame size): " << index << "/" << frame_size << " = " << page_table_index << endl;
         // for ex. if we are looking for index 2, it is in the page_table index 0
         if(getPTE(page_table, page_table_index).present == 1){
@@ -70,7 +71,9 @@ int get(int index, string arg){
     return element;
 }
 
-void second_chance_algorithm(){
+bool second_chance_algorithm(){
+    bool write_to_file_flag = false;
+
     // checking how frequently page faults are and depending on 
     // the page faults how many times I moved from front of queue to back of queue
     
@@ -85,7 +88,7 @@ void second_chance_algorithm(){
     cout << "Linked list order before SC: \n";
     PageTableEntry *print_iter = page_table;
     while(print_iter != NULL){
-        cout << print_iter->page_frame_number << " -> ";
+        cout << print_iter->page_table_index << " -> ";
         print_iter = print_iter->next;
     } cout << "\n";
 
@@ -93,43 +96,41 @@ void second_chance_algorithm(){
     if(table_type == "regular" || table_type == "normal"){
         PageTableEntry *iter = page_table;
         PageTableEntry* prev = NULL;
+        bool current_found = false;
         while(true){
             if(iter->referenced_bit == 1){ // means it is not the oldest page
+                write_to_file_flag = true;
                 iter->referenced_bit = 0;
-                // move this page to the end of the queue
-                prev = iter;
-                iter = iter->next;
             }
             else{ // means it is (one of) the oldest page
                 if(prev == NULL) // if replaced page is the first page in the queue
                     page_table = iter->next;
                 else 
                     prev->next = iter->next;
-            }
-            if(iter->next != NULL) // if not last page
-                iter = iter->next; 
-            else
-                iter = page_table; // if last page, start from the beginning
-            // Check if no page to be replaced
-            if (iter == page_table) {
                 break;
             }
+            prev = iter;
+            iter = iter->next;
+            if(iter == NULL) // if not last page
+                iter = page_table; 
+            if (iter == page_table)
+                break;
         }
         // page to be removed print
-        cout << "[INFO: Page to be removed: " << iter->page_frame_number << "]\n";
+        cout << "[INFO: Page to be removed: " << iter->page_table_index << "]\n";
         
         // now we have the oldest page.         
         // write the page to be replaced to disk
         // first get page from virtual memory
-        int page_table_index = iter->page_frame_number;
+        int page_table_index = iter->page_table_index;
 
         // int *page_elements = virtual_memory.getPage(page_table_index);
         // // then write it to disk
         // disk.writePage(page_table_index, page_elements);
 
         // update page table
-        int page_frame_number = iter->page_frame_number;
-        setPTE(page_table, page_table_index, page_frame_number, 0, 0, 0);
+        // int page_frame_number = iter->page_frame_number;
+        // setPTE(page_table, page_table_index, page_frame_number, 0, 0, 0);
 
 
     }
@@ -142,10 +143,10 @@ void second_chance_algorithm(){
     print_iter = page_table;
     cout << "Linked list order after SC: \n";
     while(print_iter != NULL){
-        cout << print_iter->page_frame_number << " -> ";
+        cout << print_iter->page_table_index << " -> ";
         print_iter = print_iter->next;
     } cout << endl;
-
+    return write_to_file_flag;
 }
 
 void handle_page_fault(int page_table_index, string algorithm){
@@ -155,39 +156,30 @@ void handle_page_fault(int page_table_index, string algorithm){
     PageTableEntry page_table_entry = disk.getPage(page_table_index);
     int *page_elements = disk.getPageFrameElements(page_table_index);
     
-    if(page_table_entry.page_frame_number > information.getSizeOfFrame()){
-        cout << "[INFO: Replacement is needed since physical frames are full. Frame number " << page_table_entry.page_frame_number 
-             << " is bigger than frame size " << information.getSizeOfFrame() << "]\n";
+    // if(page_table_entry.page_frame_number > information.getSizeOfFrame()){
+    if(physical_memory.checkIsFull()){
+        cout << "[INFO: Replacement is needed since physical frames are full. "
+             "Frame size " << information.getSizeOfFrame() << "]\n";
         // exit(EXIT_SUCCESS);
         if(algorithm == "clock"){
-            second_chance_algorithm();
-            disk.writeToFile(information.getSizeOfVirtualMemory(), information.getSizeOfFrame());
+            int write_to_file_flag_if_theres_modified = second_chance_algorithm();
+            if (write_to_file_flag_if_theres_modified)
+                disk.writeToFile(information.getSizeOfVirtualMemory(), information.getSizeOfFrame());
+            else
+                cout << "[INFO: No need to write to file since there is no modified page]\n";
+            physical_memory.printPagesInPhysicalMemory();
         }
     }
 
     // update page table
-    setPTE_present(page_table, page_table_index, 1);
-    setPTE_pfn(page_table, page_table_index, page_table_entry.page_frame_number);
+    // setPTE_present(page_table, page_table_index, 1);
+    // setPTE_pfn(page_table, page_table_index, page_table_entry.page_frame_number);
     // adding that page info and memory values to physical memory
-    physical_memory.addPage(page_table_entry, page_elements);
-    // disk.writeToFile(information.getSizeOfVirtualMemory(), information.getSizeOfFrame());
     
-        
-        
-        // // copy page elements to physical memory from page_table_index )
-        // for(int i = 0; i < information.getSizeOfFrame(); ++i){
-        //     physical_memory.setElement(
-        //         page_table_entry.page_frame_number * information.getSizeOfFrame() + i, // index
-        //         page_elements[i] // value
-        //     );
-        // }
-
-        // // now we need to update the page table entry for the page that we just added
-        // // we need to set the reference bit to 1
-        // // we need to set the dirty bit to 0
-        // page_table[page_table_index].reference_bit = 1;
-        // page_table[page_table_index].dirty_bit = 0;
-
+    int frame_no = physical_memory.getEmptyPageFrame();
+    page_table_entry.page_frame_number = frame_no;
+    cout << "fRAME NO: " << frame_no << "\n";
+    physical_memory.addPage(page_table_entry, page_elements);        
 }
 
 void set(int index, int value, string arg){

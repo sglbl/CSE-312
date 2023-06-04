@@ -87,10 +87,12 @@ void PhysicalMemory::addPage(PageTableEntry page, int* page_elements){
     int size_of_frame = information.getSizeOfFrame();
     for(int i = 0; i < size_of_frame; i++){
         setElement(page_frame_number * size_of_frame + i, page_elements[i]);
-        // virtual_memory.setElement(page_frame_number * size_of_frame + i, page_elements[i]);
     }
-    // update page table
-    setPTE(page_table, page_frame_number, page_frame_number, 1, 1, 0);
+    // // update page table
+    // setPTE(page_table, page_frame_number, page_frame_number, 1, 0, 0);
+    // cout << "Pfn" << page_frame_number << endl;
+    setPTE_present(page_table, page.page_table_index, 1);
+    setPTE_pfn(page_table, page.page_table_index, page_frame_number);
     cout << "[INFO: Page added to physical memory since it was not present]\n";
 }
 
@@ -115,4 +117,41 @@ void PhysicalMemory::removePage(int page_frame_number){
         cout << "[INFO: Page not present in physical memory so it cannot be removed]\n";
     }
 
+}
+
+void PhysicalMemory::printPagesInPhysicalMemory(){
+    int size_of_frame = information.getSizeOfFrame();
+    int number_of_frames = information.getSizeOfPhysicalMemory() / size_of_frame;
+    int* memory = getMemory();
+    for(int i = 0; i < number_of_frames; i++){
+        cout << "Frame " << i << " : "; 
+        for(int j = 0; j < size_of_frame; j++){
+            cout << memory[i * size_of_frame + j] << " ";
+        }
+        cout << endl;
+    }
+}
+
+int PhysicalMemory::getEmptyPageFrame(){
+    // check frame numbers of all pte's, return first empty one
+    int size_of_frame = information.getSizeOfFrame();
+    int number_of_frames = information.getSizeOfPhysicalMemory() / size_of_frame;
+    for(int i = 0; i < number_of_frames; i++){
+        int pte_frame_no = getPTE(page_table, i).page_frame_number;
+        if (pte_frame_no == -1)
+            return i;
+    }
+    
+    return -1;
+}
+
+bool PhysicalMemory::checkIsFull(){
+    int size_of_frame = information.getSizeOfFrame();
+    int number_of_frames = information.getSizeOfPhysicalMemory() / size_of_frame;
+    for(int i = 0; i < number_of_frames; i++){
+        int pte_present = getPTE(page_table, i).present;
+        if (!pte_present)
+            return false;
+    }
+    return true;
 }

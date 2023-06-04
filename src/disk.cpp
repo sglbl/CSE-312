@@ -42,7 +42,8 @@ void Disk::writeToFile(int memory_size, int frame_size){
             // cout << "Writing page table entry " << page_counter << endl;
             // cout << i << " is i\n";
             // cout << "memory size is " << memory_size << endl;
-            fprintf(disk_file, "%d,%d,%d,%d,%d\n", 
+            fprintf(disk_file, "%d,%d,%d,%d,%d,%d\n", 
+                    getPTE(page_table, page_counter).page_table_index,
                     getPTE(page_table, page_counter).page_frame_number, 
                     getPTE(page_table, page_counter).present, // valid bit
                     getPTE(page_table, page_counter).referenced_bit, // used bit
@@ -80,7 +81,8 @@ PageTableEntry Disk::getPage(int page_table_index){
     
     // parse line using sscanf
     PageTableEntry page_table_entry;
-    sscanf(line, "%d,%d,%d,%d,%d",
+    sscanf(line, "%d,%d,%d,%d,%d,%d",
+            &page_table_entry.page_table_index,
             &page_table_entry.page_frame_number, 
             &page_table_entry.present, // valid bit
             &page_table_entry.referenced_bit, // used bit

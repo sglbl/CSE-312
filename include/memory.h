@@ -31,6 +31,9 @@ class PhysicalMemory : public Memory{
         void addPage(PageTableEntry page, int* page_elements);
         void removePage(int page_frame_number);
         bool isPagePresent(int page_frame_number);
+        void printPagesInPhysicalMemory();
+        int getEmptyPageFrame();
+        bool checkIsFull();
 };
 
 #endif
