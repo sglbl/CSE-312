@@ -7,15 +7,6 @@
 #include "include/externs.h"
 using namespace std;
 
-// external definitions are in externs.h
-FATDirectoryEntry* directory_table;   // FAT directory
-std::ifstream rfile; // read file
-FAT12 fat12;
-string fname;
-int block_size;
-int num_of_blocks;
-// FILE *filep;
-
 int main(int argc, char *argv[]){
     string usage_message = 
         "Usages:\n./makeFileSystem blockSizeKB sgFileSystem.dat \

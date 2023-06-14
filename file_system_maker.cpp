@@ -8,12 +8,12 @@
 using namespace std;
 
 // external definitions are in externs.h
-FATDirectoryEntry* directory_table;   // FAT directory
-ofstream wfile; // write file
-FAT12 fat12;
-string fname;
-int block_size;
-int num_of_blocks;
+// FATDirectoryEntry* directory_table;   // FAT directory
+// ofstream wfile; // write file
+// FAT12 fat12;
+// string fname;
+// int block_size;
+// int num_of_blocks;
 
 int main(int argc, char *argv[]){
     part1_argument_handler(argc, argv);

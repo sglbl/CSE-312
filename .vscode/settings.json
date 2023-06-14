@@ -3,6 +3,7 @@
     "files.associations": {
         "*.h": "c",
         "string": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "iosfwd": "cpp"
     }
 }

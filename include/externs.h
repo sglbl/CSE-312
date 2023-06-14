@@ -13,6 +13,8 @@ EXTERN FAT12 fat12;
 EXTERN int block_size;
 EXTERN int num_of_blocks;
 EXTERN string fname;
-EXTERN FILE *filep;
+EXTERN FileOperators file_oper;
 EXTERN ofstream wfile; // write file
 EXTERN ifstream rfile; // read file
+EXTERN string internal_path_name;
+EXTERN string fname2;
