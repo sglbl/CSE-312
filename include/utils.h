@@ -8,7 +8,8 @@ using namespace std;
 //     struct LinkedList *next;
 // } LinkedList;
 
-#define EMPTY_BLOCK -1
+#define EMPTY_BLOCK -9
+#define END_OF_FILE -1
 #define FILE_NAME_SIZE 8
 #define EXTENSION_SIZE 3
 #define DIRECTORY_ENTRY_SIZE 32
@@ -63,7 +64,9 @@ void part2_argument_handler(int argc, char *argv[], string usage);
 void fat12_fs_creator();
 void fat12_fs_operator();
 bool write_to_file(int num, int size=1);
-bool read_from_file(int size=1);
+// bool read_from_file(int size=1);
+int read_int_from_file(int size=1);
+bool write_to_file2(char *buffer, int size);
 // Operator Functions (f=function)
 bool mkdir_f();
 bool write_f();
@@ -80,6 +83,8 @@ void set_parsed_path_info(ParsedPath *parsed_path, string first_part_name, strin
 // Directory functions
 int get_block_index_of_dir(string parent_directory_path);
 int get_value_from_fat12(int index);
+void directory_entry_reader(char *dir_buffer_32);
+void directory_entry_writer(char *dir_buffer_32);
 
 
 #endif // UTILS_H

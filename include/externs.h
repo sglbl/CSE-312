@@ -8,13 +8,14 @@
 #define DEBUG 1
 
 // not making static because of: multiple definition for each include
-EXTERN FATDirectoryEntry* fat_directory;  
+EXTERN FATDirectoryEntry fat_directory;  
 EXTERN FAT12 fat12;
 EXTERN int block_size;
 EXTERN int num_of_blocks;
 EXTERN string fname;
 EXTERN FileOperators file_oper;
-EXTERN ofstream wfile; // write file
-EXTERN ifstream rfile; // read file
+// EXTERN ofstream wfile; // write file
+// EXTERN ifstream rfile; // read file
+EXTERN fstream file;
 EXTERN string internal_path_name;
 EXTERN string fname2;

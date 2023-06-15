@@ -15,7 +15,7 @@ run: compile1
 	./bin/makeFileSystem 4 sgFileSystem.dat
 
 run2: compile2
-	./bin/fileSystemOper  sgFileSystem.dat mkdir "/bin/"
+	./bin/fileSystemOper sgFileSystem.dat mkdir "/usr/"
 
 clean:
 	rm -f bin/**
@@ -26,6 +26,6 @@ debug1:
 	g++ $(WARN) $(DEBUG) file_system_maker.cpp $(SRC) -o bin/makeFileSystem
 
 debug2:
-	g++ $(WARN) $(DEBUG) file_system_maker.cpp $(SRC) -o bin/makeFileSystem
+	g++ $(WARN) $(DEBUG) file_system_operator.cpp $(SRC) -o bin/fileSystemOper
 
 # Suleyman Golbol 1801042656

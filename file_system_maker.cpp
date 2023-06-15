@@ -18,9 +18,10 @@ using namespace std;
 int main(int argc, char *argv[]){
     part1_argument_handler(argc, argv);
 
-    wfile.open(fname, std::ios::binary);
+    // wfile.open(fname, std::ios::binary);
+    file.open(fname, ios::binary | ios::in | ios::out | ios::trunc);
     fat12_fs_creator();
-    wfile.close();
+    file.close();
 
     return 0;
 }

@@ -22,9 +22,10 @@ int main(int argc, char *argv[]){
     
     part2_argument_handler(argc, argv, usage_message);
     
-    rfile.open(fname, std::ios::binary);
+    file.open(fname, ios::binary | ios::in | ios::out);
+    
     fat12_fs_operator();
-    rfile.close();
+    file.close();
 
     return 0;
 }
