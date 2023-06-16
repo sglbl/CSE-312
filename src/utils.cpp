@@ -9,16 +9,13 @@ using namespace std;
 
 // external definitions are in externs.h
 FATDirectoryEntry fat_directory;   // FAT directory
-// ofstream file; // write file
-// ifstream file; // read file
-fstream file;
-FAT12 fat12;
-FileOperators file_oper;
-string fname;
-string fname2;
-string internal_path_name;
-int block_size;
-int num_of_blocks;
+fstream file; // file stream to read and write to file
+FileOperators file_oper; // file operator enum (mkdir, dir, dumpe2fs)
+string internal_path_name; // path to the file_system.dat file that'll get by argv for part3
+string fname; // path to the file_system.dat for part2 section
+string fname2; // it will get by argv for write and read operations
+int block_size; // block size in bytes
+int num_of_blocks; // number of blocks in the file system
 
 void print_error_exit(string message){
     cerr << "Error: " << message;
@@ -43,7 +40,7 @@ void part1_argument_handler(int argc, char *argv[]){
 
 void fat12_fs_creator(){
     block_size = block_size * 1024; // convert from KB to bytes by multiplying 2^10	
-    num_of_blocks = pow(2, 12); // 2^12 = 4096 blocks since FAT12 is used
+    num_of_blocks = pow(2, 12); // 2^12 = 4096 blocks can be represented since FAT12 is used
 
     // filep = fopen(fname.c_str(), "w+"); // create a file
     // if(filep == NULL) print_error_exit("File could not be created!\n");
@@ -54,51 +51,45 @@ void fat12_fs_creator(){
     /* Creating a FAT12 file system */
 
     // Write block size
-    write_to_file(block_size, 2);
+    write_to_file_int_as_byte(block_size, 2);
 
     // Write number of blocks
-    write_to_file(num_of_blocks, 2);
+    write_to_file_int_as_byte(num_of_blocks, 2);
     
     // Write number of free blocks
     int free_blocks = num_of_blocks - 1; // 1 block is reserved for FAT
-    write_to_file(free_blocks, 2);
+    write_to_file_int_as_byte(free_blocks, 2);
 
     // Write number of files
     int num_of_files = 0;
-    write_to_file(num_of_files, 2);
+    write_to_file_int_as_byte(num_of_files, 2);
 
     // Write number of directories
     int num_of_dirs = 0;
-    write_to_file(num_of_dirs, 2);
+    write_to_file_int_as_byte(num_of_dirs, 2);
 
-    // write end of FAT to file
-    // const int END_OF_FAT = 0xFFF; // ÇÇ Dene
-    const int END_OF_FAT = -1;
-    write_to_file(END_OF_FAT, 2);
+    // Writing END_OF_FAT value to the first block's entry in the FAT
+    // The first block is reserved to store metadata [so not part of the FAT entries.]
+    write_to_file_int_as_byte(END_OF_FAT, 2); 
 
+    // write free blocks to file by giving them FREE_BLOCK code (I choose -9)
     int i=0;
-    while(i < num_of_blocks - 1){
-        write_to_file(EMPTY_BLOCK, 2);
+    while(i < num_of_blocks - 1){ // -1 because first block is reserved for metadata
+        write_to_file_int_as_byte(FREE_BLOCK, 2); // give every block FREE_BLOCK code
         i++;
     }
 
     i = 0;
     int max_size = num_of_blocks * block_size;
     while(i < max_size){
-        write_to_file(0 /*Code for  */, 1);
+        write_to_file_int_as_byte(0 , 1); // fill with 0s by 1 byte
         i++;
     }
 
-    cout << "Written\n";
-    // // read_from_file(fname, block_size);
-    // char buf[48];
-    // int block_siz = 48;
-    // read_from_file(buf, block_siz);
-    // cout << "buf: " << buf << endl;
-
+    cout << "FAT12 Information is Created and Written to File\n";
 }
 
-bool write_to_file(int num, int size){
+bool write_to_file_int_as_byte(int num, int size){
     // cout << "Number to write: " << num << endl;
     short number = (short) num;
     // short = 2 bytes = 16 bits
@@ -288,15 +279,32 @@ ParsedPath path_parser(string path){
     const string ROOT_PATH ="/";
 
     if(path == ROOT_PATH){
+        cout << "1\n";
         set_parsed_path_info(&parsed_path, "", "", ROOT_PATH, ROOT_PATH);
         return parsed_path;
+    }
+    
+    // check if last index is /, if it is then remove it
+    if(path[path.length()-1] == ROOT_PATH[0]){
+        path = path.substr(0, path.length()-1); // if path is /usr/, then it will be /usr
     }
 
     // if only one slash is given, then it is the root directory
     int first_slash_index = path.find_first_of(ROOT_PATH);
     int second_slash_index = path.substr(1).find_first_of(ROOT_PATH); // for /bin/, it should be 4
     int last_slash_index = path.find_last_of(ROOT_PATH);
+
     if(first_slash_index == last_slash_index){
+        if(path.size() > 1){
+            cout << "3\n";
+            set_parsed_path_info(&parsed_path, path.substr(1, path.length()-1), 
+                                               path.substr(1, path.length()-1), 
+                                               ROOT_PATH, 
+                                               path);
+            return parsed_path;
+        }
+
+        cout << "2\n";
         set_parsed_path_info(&parsed_path, ROOT_PATH, ROOT_PATH, ROOT_PATH, ROOT_PATH);
         return parsed_path;
     }
@@ -308,19 +316,6 @@ ParsedPath path_parser(string path){
         path.substr(first_slash_index+1, last_slash_index-first_slash_index-1),
         path);
 
-// if(last_slash_index == 0){
-//         set_parsed_path_info(&parsed_path, internal_path_name.substr(1), 
-//                             "/", internal_path_name);
-//         return parsed_path;
-//     }
-
-//     set_parsed_path_info(&parsed_path, internal_path_name.substr(last_slash_index + 1), 
-//                         internal_path_name.substr(0, last_slash_index), internal_path_name);
-    cout << "first: " << parsed_path.first_part_name <<"|";
-    cout << "last: " << parsed_path.last_part_name << "|";
-    cout << "parent: " << parsed_path.parent_dir_path << "|";
-    cout << "full: " << parsed_path.full_path << "\n";
-
     return parsed_path;
 }
 
@@ -331,55 +326,65 @@ void set_parsed_path_info(ParsedPath *parsed_path, string first_part_name, strin
     parsed_path->full_path = full_path;
 }
 
-static short int16_from_str(char *str){ // ÇÇ CHANGE
-    return ((0x00FF & str[0]) << 8) | (0x00FF & str[1]);
+static short int16_from_str(char *str){
+    short result = 0;
+    int index = 0;
+    for(int i = 1; i >= 0; i--){ // for every 8 bits (2 bytes=16 bits)
+        result |= ((str[index] & 0x000000FF) << (i*8));
+        index++;
+    }
+    return result;
 }
 
 static int int32_from_str(char *str){
-    return ((0x000000FF & str[0]) << 24) | ((0x000000FF & str[1]) << 16) | ((0x000000FF & str[2]) << 8) | (0x000000FF & str[3]);
+    int result = 0;
+    int index = 0;
+    for(int i = 3; i >= 0; i--){ // for every 8 bits (4 bytes=32 bits)
+        result |= ((str[index] & 0x000000FF) << (i*8));
+        index++;
+    }
+    return result;
 }
 
-static char *int16_to_str(short num, char *str){ // çç change
-    str[0] = (num >> 8) & 0x00FF;
-    str[1] = num & 0x00FF;
+static char *int16_to_str(short num, char *str){
+    int str_index = 0;
+    for(int i = 1; i >= 0; i--){ // for every 8 bits (2 bytes=16 bits)
+        str[str_index] = (num >> (i*8)) & 0x000000FF;
+        str_index++;
+    }
     return str;
 }
 
 static char *int32_to_str(int num, char *str){
-    str[0] = (num >> 24) & 0x000000FF;
-    str[1] = (num >> 16) & 0x000000FF;
-    str[2] = (num >> 8) & 0x000000FF;
-    str[3] = num & 0x000000FF;
+    int str_index = 0;
+    for(int i = 3; i >= 0; i--){ // for every 8 bits (4 bytes=32 bits)
+        str[str_index] = (num >> (i*8)) & 0x000000FF;
+        str_index++;
+    }
+    // string is computed from the most significant byte 
+    // to the least significant byte (right to left)
     return str;
 }
 
-short get_fat_val(short fat_idx) { //ÇÇ CHANGE
-    char buff[2];
+short get_fat_val(short fat_idx) {
+    char buff[2]; // Buffer to store the FAT entry
     std::streampos offset = file.tellg();  // Store the current file position
     file.seekg(10 + fat_idx * 2);  // Seek to the position of the FAT entry
-    file.read(buff, sizeof(buff));         // Read the data into the buffer
-    file.seekg(offset);                     // Restore the original file position
-    return int16_from_str(buff);               // Convert and return the short value
+    file.read(buff, sizeof(buff)); // Read the data into the buffer
+    file.seekg(offset);            // Restore the original file position
+    return int16_from_str(buff);   // Convert and return the short value
 }
 
-static void set_fat_val(short fat_idx, short fat_val){ // çç change
+static void set_fat_val_to_file(short fat_idx, short fat_val){ // Convert fat_val to string and write it to the file at the given index FAT entry
     char buff[2];
     long offset = file.tellp(); // Store the current file position
     file.seekp(10 + fat_idx * 2, std::ios_base::beg); // Seek to the position of the FAT entry
     int16_to_str(fat_val, buff);
-    write_to_file2(buff, sizeof(buff));
+    write_to_file_byte(buff, sizeof(buff));
     file.seekp(offset); // Restore the original file position
 }
 
-bool write_to_file2(char *buffer, int size){
-    // std::ofstream file(fname, std::ios::binary);
-    // if (!file.is_open()) {
-    //     print_error_exit("Failed to open file.");
-    // }
-    // file.write(buffer, size);
-    // file.close();
-    // std::cout << "Integer written to file successfully." << std::endl;
-    
+bool write_to_file_byte(char *buffer, int size){
     for (int i = 0; i < size; i++) {
         if (!file.put(buffer[i]))
             return false;
@@ -396,13 +401,12 @@ bool write_to_file2(char *buffer, int size){
 // }
 
 short get_free_block_index(){
-    // char buff[2];
     short result = -1;
     std::streampos offset = file.tellg();  // Store the current file position
     file.seekg(10, ios::beg); // Seek to the position of the FAT entry
     // file.read(buff, sizeof(buff));         // Read the data into the buffer
     for(int i = 0; i < num_of_blocks; i++){
-        if((short)read_int_from_file(2) == EMPTY_BLOCK){ // for ex convert from 65535 to -1
+        if((short)read_int_from_file(2) == FREE_BLOCK){ // for ex convert from 65535 to -1
             result = i;
             break;
         }
@@ -413,67 +417,81 @@ short get_free_block_index(){
 }
 
 
-
 bool mkdir_f(){
     ParsedPath parsed_path = path_parser(internal_path_name);
+    if (parsed_path.last_part_name.length() > 8){
+        cout << "Error: Directory name is too long" << endl;
+        return false;
+    }
 
     char dir_entry_buffer[32];
     short prev_block_index_of_dir = get_block_index_of_dir(parsed_path.parent_dir_path);
     cout << "prev_block_index_of_dir: " << prev_block_index_of_dir << endl;
-    bool is_created = 0;
+    bool is_block_created = 0; // for 4 kb every block can have 128 dir entries
 
     short block_index_of_dir = prev_block_index_of_dir;
-    while (block_index_of_dir != -1 /* file eof*/){
-        file.seekg(8202 + block_index_of_dir*block_size, std::ios::beg);
-        int number_of_dirs_in_block = block_size / DIRECTORY_ENTRY_SIZE;
-        for(int i = 0; i < number_of_dirs_in_block; i++){
-            file.read(dir_entry_buffer, DIRECTORY_ENTRY_SIZE);
-            directory_entry_reader(dir_entry_buffer);
+    
+    // block_index_of_dir = -1;
+    // prev_block_index_of_dir = -1;
+
+    while (block_index_of_dir != END_OF_FAT){
+        file.seekg(START_BYTE + block_index_of_dir*block_size, std::ios::beg);
+        int number_of_dir_entries_in_block = block_size / SIZE_DE;
+        for(int i = 0; i < number_of_dir_entries_in_block; i++){
+            file.read(dir_entry_buffer, SIZE_DE);
+            cout << "dir_entry_buffer: " << dir_entry_buffer << endl;
+            directory_entry_reader_to_struct(dir_entry_buffer);
             if(fat_directory.file_name == parsed_path.last_part_name){
-                cout << "Directory already exists" << endl;
+                cout << "Directory " << parsed_path.last_part_name << " already exists" << endl;
                 return false;
             }
-            if(fat_directory.file_attributes == IS_EMPTY){
-                file.seekp(8202 + block_index_of_dir * block_size + i * DIRECTORY_ENTRY_SIZE, std::ios::beg);
+            if(fat_directory.file_attributes == IS_EMPTY_DE){
+                file.seekp(START_BYTE + block_index_of_dir * block_size + i * SIZE_DE, std::ios::beg);
+                cout << "Inside loop and variables are " << block_index_of_dir << " " << i <<
+                " seek position is " << START_BYTE + block_index_of_dir * block_size + i * SIZE_DE << endl;
                 strncpy(fat_directory.file_name, parsed_path.last_part_name.c_str(), 8);
-                fat_directory.file_attributes = IS_DIR;
+                fat_directory.file_attributes = IS_DIR_DE;
                 fat_directory.date = 0;
                 fat_directory.time = 0;
                 fat_directory.first_block_no = get_free_block_index();
                 fat_directory.file_size = 0;        
-                set_fat_val(fat_directory.first_block_no, END_OF_FILE);        
+                set_fat_val_to_file(fat_directory.first_block_no, END_OF_FAT);        
 
-                directory_entry_writer(dir_entry_buffer);
-                write_to_file2(dir_entry_buffer, DIRECTORY_ENTRY_SIZE);  // buffer to file
-                is_created = 1;
+                directory_entry_writer_to_buffer(dir_entry_buffer);
+                write_to_file_byte(dir_entry_buffer, SIZE_DE);  // buffer to file
+                is_block_created = 1;
                 break;
             }
         }
-        if(is_created){
+        if(is_block_created){
             break;
         }
         prev_block_index_of_dir = block_index_of_dir;
         block_index_of_dir = get_fat_val(block_index_of_dir);
     }
 
-    if(is_created == 0){
+    if(is_block_created == 0){
         // create new block
         short new_block_index = get_free_block_index();
-        file.seekp(8202 + prev_block_index_of_dir * block_size + DIRECTORY_ENTRY_SIZE, std::ios::beg);
-        char buff[2];
-        set_fat_val(new_block_index, END_OF_FILE);
-        set_fat_val(prev_block_index_of_dir, new_block_index);
+        file.seekp(START_BYTE + new_block_index * block_size, std::ios::beg);
+        cout << "Outside loop and variables are " << block_index_of_dir << " " <<
+            " seek position is " << START_BYTE + new_block_index * block_size << endl;
 
-        file.seekp(8202 + new_block_index * block_size, std::ios::beg);
+        set_fat_val_to_file(new_block_index, END_OF_FAT); // set fat value of new block to END_OF_FAT
+        set_fat_val_to_file(prev_block_index_of_dir, new_block_index); // set fat value of prev block to new block index
+        cout << "New block index: " << new_block_index << " prev_block_index_of_dir: " << prev_block_index_of_dir << endl;
+
+        file.seekp(START_BYTE + new_block_index * block_size, std::ios::beg);
         strncpy(fat_directory.file_name, parsed_path.last_part_name.c_str(), 8);
-        fat_directory.file_attributes = IS_DIR;
+        fat_directory.file_attributes = IS_DIR_DE;
         fat_directory.date = 0;
         fat_directory.time = 0;
         fat_directory.first_block_no = get_free_block_index();
         fat_directory.file_size = 0;                
 
-        directory_entry_writer(dir_entry_buffer);
-        write_to_file2(dir_entry_buffer, DIRECTORY_ENTRY_SIZE);  // buffer to file
+
+        directory_entry_writer_to_buffer(dir_entry_buffer);
+        write_to_file_byte(dir_entry_buffer, SIZE_DE);  // buffer to file
     }
 
     
@@ -481,19 +499,36 @@ bool mkdir_f(){
 }
 
 bool dir_f(){
+    // Get the block index of the directory based on the internal path name
     short block_index_of_dir = get_block_index_of_dir(internal_path_name);
-    char dir_entry_buffer[32];
 
-    while(block_index_of_dir != -1){
-        file.seekg(8202 + block_index_of_dir*block_size, std::ios::beg);
-        int number_of_dirs_in_block = block_size / DIRECTORY_ENTRY_SIZE;
-        for(int i = 0; i < number_of_dirs_in_block; i++){
-            file.read(dir_entry_buffer, DIRECTORY_ENTRY_SIZE);
-            directory_entry_reader(dir_entry_buffer);
-            if(fat_directory.file_attributes != IS_EMPTY){
-                cout << fat_directory.file_name << endl;
+    // Buffer to hold the directory entry data
+    char dir_entry_buffer[SIZE_DE];
+
+    // Loop through all the blocks of the directory
+    while (block_index_of_dir != END_OF_FAT) {
+        // Setting file position to the beginning of the current dir_block
+        int point_to_seek = START_BYTE + block_index_of_dir * block_size;
+        cout << "Block index of dir " << block_index_of_dir << ", point_to_seek: " << point_to_seek << endl;
+        file.seekg(point_to_seek, std::ios::beg);
+
+        // Calculate the num_of_dir_entries in the block by dividing to 32
+        int number_of_dirs_in_block = block_size / SIZE_DE;
+
+        // Loop through each directory entry in the block
+        for (int i = 0; i < number_of_dirs_in_block; i++) {
+            // Read the dir_entry data into the buffer
+            file.read(dir_entry_buffer, SIZE_DE);
+            // Process the directory entry using the directory_entry_reader_to_struct function
+            directory_entry_reader_to_struct(dir_entry_buffer); // read to fat_directory
+
+            // Check if the directory entry is not empty (has valid attributes)
+            if (fat_directory.file_attributes != IS_EMPTY_DE) {
+                // Output the name of the directory entry (could be file name or directory name)
+                cout << "[" << fat_directory.file_name << "]\n";
             }
         }
+        // Get the FAT value for the next block of the directory
         block_index_of_dir = get_fat_val(block_index_of_dir);
     }
 
@@ -531,6 +566,8 @@ bool cmp_f(){
 }
 
 // Directory functions
+
+// Get the block index of the directory based on the internal path name
 int get_block_index_of_dir(string parent_directory_path){
     short int block_index_of_dir = 0;
     // get first and rest
@@ -540,15 +577,15 @@ int get_block_index_of_dir(string parent_directory_path){
         
         short block_index = 0;
         block_index = block_index_of_dir;
-        while(block_index != -1 /* file eof*/){
-            file.seekg(8202 + block_index*block_size, std::ios::beg);
-            int dir_entry_index = block_size / DIRECTORY_ENTRY_SIZE;
+        while(block_index != END_OF_FAT){
+            file.seekg(START_BYTE + block_index*block_size, std::ios::beg);
+            int dir_entry_index = block_size / SIZE_DE;
             for(int i = 0; i < dir_entry_index; i++){
                 char dir_buffer[32];
-                read_from_file_to_dir_buffer(dir_buffer, DIRECTORY_ENTRY_SIZE/*32*/);
-                directory_entry_reader(dir_buffer);
+                read_from_file_to_dir_buffer(dir_buffer, SIZE_DE/*32*/);
+                directory_entry_reader_to_struct(dir_buffer);
                 if(parsed_path.first_part_name == fat_directory.file_name 
-                   && fat_directory.file_attributes == IS_DIR){
+                   && fat_directory.file_attributes == IS_DIR_DE){
                     cout << "File name: " << fat_directory.file_name << endl;
                     find_flag = 1;
                     block_index_of_dir = fat_directory.first_block_no;
@@ -588,9 +625,9 @@ int get_value_from_fat12(int index){
     return number;
 }
 
-void directory_entry_reader(char *dir_buffer_32){
-    // directory_table [fileName(8) fileExt(3) fileAttr(1) reserved(10)
-                    // time(2) date(2) firstBlock(2) fileSize(4)] 
+void directory_entry_reader_to_struct(char *dir_buffer_32){
+    // directory_table 
+    // [fileName(8) fileExt(3) fileAttr(1) reserved(10) time(2) date(2) firstBlock(2) fileSize(4)] 
     // read 32 bytes from dir_buffer_32 and write to fat_directory
     int index_iter = 0;
     int i = 0;
@@ -602,6 +639,7 @@ void directory_entry_reader(char *dir_buffer_32){
 
     fat_directory.file_name[i] = '\0';
     fat_directory.file_attributes = dir_buffer_32[index_iter++];
+    // cout << "File attr in reader to struct " << (int)fat_directory.file_attributes << endl;
 
     i = 0;
     while (i < 10) {
@@ -617,7 +655,6 @@ void directory_entry_reader(char *dir_buffer_32){
         i++;
         index_iter++;
     }
-    // fat_directory.time = (short)atoi(temp_convert_to_int);
     fat_directory.time = int16_from_str(temp_convert_to_int);
 
     i = 0;
@@ -626,7 +663,6 @@ void directory_entry_reader(char *dir_buffer_32){
         i++;
         index_iter++;
     }
-    // fat_directory.date = (short)atoi(temp_convert_to_int);
     fat_directory.date = int16_from_str(temp_convert_to_int);
 
     i = 0;
@@ -635,8 +671,9 @@ void directory_entry_reader(char *dir_buffer_32){
         i++;
         index_iter++;
     }
-    // fat_directory.first_block_no = (short)atoi(temp_convert_to_int);
+
     fat_directory.first_block_no = int16_from_str(temp_convert_to_int);
+
     i = 0;
     char temp_convert_to_int2[4];
     while (i < 4) {
@@ -644,25 +681,24 @@ void directory_entry_reader(char *dir_buffer_32){
         i++;
         index_iter++;
     }
-    // fat_directory.file_size = (int)atoi(temp_convert_to_int2);
-    fat_directory.file_size = int32_from_str(temp_convert_to_int2);
-    
+
+    fat_directory.file_size = int32_from_str(temp_convert_to_int2); // since 4 bytes instead of 2
 }
 
 
-void directory_entry_writer(char *dir_buffer_32){
+void directory_entry_writer_to_buffer(char *dir_buffer_32){
     // directory_table [fileName(8) fileExt(3) fileAttr(1) reserved(10)
                     // time(2) date(2) firstBlock(2) fileSize(4)] 
     // write 32 bytes from directory_table_fat and write to dir_buffer_32
     int index_iter = 0;
     int i = 0;
-    while(i < FILE_NAME_SIZE + EXTENSION_SIZE){
+    while(i < FILE_NAME_SIZE + EXTENSION_SIZE){ // get file name and extension and write to buffer
         dir_buffer_32[index_iter] = fat_directory.file_name[i];
         i++;
         index_iter++;
     }
 
-    dir_buffer_32[index_iter++] = fat_directory.file_attributes;
+    dir_buffer_32[index_iter++] = fat_directory.file_attributes; // get file attributes and write to buffer
 
     i = 0;
     while (i < 10) {

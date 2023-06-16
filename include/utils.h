@@ -2,21 +2,17 @@
 #define UTILS_H
 using namespace std;
 
-// typedef struct LinkedList{
-//     int page_frame;
-//     int reference_bit;
-//     struct LinkedList *next;
-// } LinkedList;
-
-#define EMPTY_BLOCK -9
-#define END_OF_FILE -1
+#define END_OF_FAT -1
+#define FREE_BLOCK -9
 #define FILE_NAME_SIZE 8
 #define EXTENSION_SIZE 3
-#define DIRECTORY_ENTRY_SIZE 32
+#define START_BYTE 8202 // 4096*2 (2 blocks for system) + 10 reserved
+#define SIZE_DE 32
 
-#define IS_EMPTY 7
-#define IS_DIR 8
-#define IS_FILE 9
+// Attirbutes for Directory Entry (DE)
+#define IS_FILE_DE 2
+#define IS_EMPTY_DE 0
+#define IS_DIR_DE 1
 
 typedef struct FATDirectoryEntry{
     char file_name[FILE_NAME_SIZE];
@@ -26,19 +22,8 @@ typedef struct FATDirectoryEntry{
     unsigned short time;
     unsigned short date;
     unsigned short first_block_no; 
-    unsigned int file_size; // file size in bytes
+    unsigned int file_size; // file size as 4 bytes
 }FATDirectoryEntry;  // Fixed size of 32 bytes 
-
-// File Allocation Table (FAT) structure
-typedef struct FAT12{
-    // FILE *filep;
-    // string fname;
-    int block_count;
-    int block_size;
-} FAT12;    
-// Each entry in the FAT holds information about the allocation status of the
-// corresponding data block, including whether it is free or allocated and 
-// pointers to the next block in a file's chain.
 
 typedef struct ParsedPath{
     string first_part_name;
@@ -58,15 +43,14 @@ enum FileOperators{
     unknown_e
 }; // e = enum
 
+// Error and Argument Handling Functions
 void print_error_exit(string error_message);
 void part1_argument_handler(int argc, char *argv[]);
 void part2_argument_handler(int argc, char *argv[], string usage);
+// File System Creation and Operation Functions
 void fat12_fs_creator();
 void fat12_fs_operator();
-bool write_to_file(int num, int size=1);
-// bool read_from_file(int size=1);
-int read_int_from_file(int size=1);
-bool write_to_file2(char *buffer, int size);
+
 // Operator Functions (f=function)
 bool mkdir_f();
 bool write_f();
@@ -76,6 +60,12 @@ bool dumpe2fs_f();
 bool read_f();
 bool cmp_f();
 
+// File writing and reading helper functions
+bool write_to_file_int_as_byte(int num, int size=1);
+bool write_to_file_byte(char *buffer, int size);
+int read_int_from_file(int size=1);
+// bool read_from_file(int size=1);
+
 // Path functions
 ParsedPath path_parser(string path);
 void set_parsed_path_info(ParsedPath *parsed_path, string first_part_name, string last_part_name, string parent_dir_path, string full_path);
@@ -83,8 +73,8 @@ void set_parsed_path_info(ParsedPath *parsed_path, string first_part_name, strin
 // Directory functions
 int get_block_index_of_dir(string parent_directory_path);
 int get_value_from_fat12(int index);
-void directory_entry_reader(char *dir_buffer_32);
-void directory_entry_writer(char *dir_buffer_32);
+void directory_entry_reader_to_struct(char *dir_buffer_32);
+void directory_entry_writer_to_buffer(char *dir_buffer_32);
 
 
 #endif // UTILS_H

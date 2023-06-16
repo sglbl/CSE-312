@@ -1,3 +1,7 @@
+# MAKEFILE
+# @author Suleyman Golbol
+
+# VARIABLES
 # Wildcard pattern to include all .cpp files
 SRC = $(wildcard src/*.cpp)
 WARN = -Wall -Wextra
@@ -11,7 +15,11 @@ compile1:
 compile2:
 	g++ $(WARN) file_system_operator.cpp $(SRC) -o bin/fileSystemOper
 
-run: compile1
+run: compile1 compile2
+	./bin/makeFileSystem 4 sgFileSystem.dat
+	./bin/fileSystemOper sgFileSystem.dat mkdir "/usr/"
+
+run1: compile1
 	./bin/makeFileSystem 4 sgFileSystem.dat
 
 run2: compile2
@@ -19,13 +27,12 @@ run2: compile2
 
 clean:
 	rm -f bin/**
+	rm -f *.dat
 
-# DEBUGGING: gdb -q ./bin/makeFileSystem
-# RUNNING: r 4 mySystem.dat
 debug1:
 	g++ $(WARN) $(DEBUG) file_system_maker.cpp $(SRC) -o bin/makeFileSystem
 
 debug2:
 	g++ $(WARN) $(DEBUG) file_system_operator.cpp $(SRC) -o bin/fileSystemOper
-
-# Suleyman Golbol 1801042656
+# DEBUGGING: gdb -q ./bin/makeFileSystem
+# RUNNING: r 4 mySystem.dat
