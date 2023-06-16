@@ -456,6 +456,7 @@ bool mkdir_f(){
                 fat_directory.first_block_no = get_free_block_index();
                 fat_directory.file_size = 0;        
                 set_fat_val_to_file(fat_directory.first_block_no, END_OF_FAT);        
+                set_fat_val_to_file(-1, fat_directory.first_block_no); // -1 means sets as last block in the chain |al
 
                 directory_entry_writer_to_buffer(dir_entry_buffer);
                 write_to_file_byte(dir_entry_buffer, SIZE_DE);  // buffer to file
