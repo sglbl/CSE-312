@@ -76,5 +76,11 @@ int get_value_from_fat12(int index);
 void directory_entry_reader_to_struct(char *dir_buffer_32);
 void directory_entry_writer_to_buffer(char *dir_buffer_32);
 
+// Getting/Setting FAT functions
+
+// Get fat_val from the file at the given index FAT entry
+short get_fat_val_from_file(short fat_idx);
+// Convert fat_val to string and write it to the file at the given index FAT entry
+void set_fat_val_to_file(short fat_idx, short fat_val);
 
 #endif // UTILS_H
