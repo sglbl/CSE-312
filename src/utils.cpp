@@ -14,7 +14,7 @@ FileOperators file_oper; // file operator enum (mkdir, dir, dumpe2fs)
 string internal_path_name; // path to the file_system.dat file that'll get by argv for part3
 string fname; // path to the file_system.dat for part2 section
 string fname2; // it will get by argv for write and read operations
-int block_size; // block size in bytes
+float block_size; // block size in bytes
 int num_of_blocks; // number of blocks in the file system
 
 void print_error_exit(string message){
@@ -30,9 +30,12 @@ void part1_argument_handler(int argc, char *argv[]){
     
     // Example: argv[1] = first argument, argv[2] = second argument, etc.
 
-    block_size = atoi(argv[1]);
-    if(block_size < 0 ) print_error_exit("Block size can be 0.5, 1, 2 or 4\n");
-    cout << "Block size: " << block_size << endl;
+    block_size = atof(argv[1]);
+    if(block_size != 0.5 && block_size != 1 && block_size != 2 && block_size != 4){ 
+        print_error_exit("Block size can be 0.5, 1, 2 or 4\n");
+    }
+    
+    cout << "Block size: " << block_size << " KB\n";
     string disk_file(argv[2]);
     fname = disk_file;
     cout << "Disk file name: " << fname << endl;
@@ -41,9 +44,6 @@ void part1_argument_handler(int argc, char *argv[]){
 void fat12_fs_creator(){
     block_size = block_size * 1024; // convert from KB to bytes by multiplying 2^10	
     num_of_blocks = pow(2, 12); // 2^12 = 4096 blocks can be represented since FAT12 is used
-
-    // filep = fopen(fname.c_str(), "w+"); // create a file
-    // if(filep == NULL) print_error_exit("File could not be created!\n");
 
     if (!file.is_open()) {
         print_error_exit("Failed to open file.");
@@ -279,7 +279,6 @@ ParsedPath path_parser(string path){
     const string ROOT_PATH ="/";
 
     if(path == ROOT_PATH){
-        cout << "1\n";
         set_parsed_path_info(&parsed_path, "", "", ROOT_PATH, ROOT_PATH);
         return parsed_path;
     }
@@ -296,7 +295,6 @@ ParsedPath path_parser(string path){
 
     if(first_slash_index == last_slash_index){
         if(path.size() > 1){
-            cout << "3\n";
             set_parsed_path_info(&parsed_path, path.substr(1, path.length()-1), 
                                                path.substr(1, path.length()-1), 
                                                ROOT_PATH, 
@@ -304,7 +302,6 @@ ParsedPath path_parser(string path){
             return parsed_path;
         }
 
-        cout << "2\n";
         set_parsed_path_info(&parsed_path, ROOT_PATH, ROOT_PATH, ROOT_PATH, ROOT_PATH);
         return parsed_path;
     }
@@ -511,7 +508,7 @@ bool dir_f(){
         // Setting file position to the beginning of the current dir_block
         int point_to_seek = START_BYTE + block_index_of_dir * block_size;
         cout << "Block index of dir " << block_index_of_dir << ", point_to_seek: " << point_to_seek << endl;
-        file.seekg(point_to_seek, std::ios::beg);
+        file.seekg(point_to_seek, ios::beg);
 
         // Calculate the num_of_dir_entries in the block by dividing to 32
         int number_of_dirs_in_block = block_size / SIZE_DE;
@@ -684,6 +681,10 @@ void directory_entry_reader_to_struct(char *dir_buffer_32){
     }
 
     fat_directory.file_size = int32_from_str(temp_convert_to_int2); // since 4 bytes instead of 2
+    // cout << "File size: " << fat_directory.file_size << endl;
+    // cout << "File attr:" << (int)fat_directory.file_attributes << endl;
+    // cout << "File name: " << fat_directory.file_name << endl;
+    // cout << "First block no: " << fat_directory.first_block_no << endl;
 }
 
 

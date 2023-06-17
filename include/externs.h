@@ -9,7 +9,7 @@
 
 // not making static because of: multiple definition for each include
 EXTERN FATDirectoryEntry fat_directory;  
-EXTERN int block_size;
+EXTERN float block_size;
 EXTERN int num_of_blocks;
 EXTERN string fname;
 EXTERN FileOperators file_oper;

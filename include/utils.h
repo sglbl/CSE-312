@@ -15,9 +15,9 @@ using namespace std;
 #define IS_DIR_DE 1
 
 typedef struct FATDirectoryEntry{
-    char file_name[FILE_NAME_SIZE];
+    char file_name[FILE_NAME_SIZE]; // file or directory name
     char file_extension[EXTENSION_SIZE];
-    char file_attributes;
+    char file_attributes; // 0: empty, 1: directory, 2: file
     char reserved[10];
     unsigned short time;
     unsigned short date;
