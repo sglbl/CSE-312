@@ -1,4 +1,4 @@
-#ifdef UTILS_H_
+#ifdef UTILS_H
   #define EXTERN
 #else
   #define EXTERN extern

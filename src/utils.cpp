@@ -6,6 +6,7 @@
 #include <cstring>
 #include <ctime> 
 #include "../include/externs.h"
+#include "../include/utils.h"
 using namespace std;
 
 // external definitions are in externs.h
@@ -58,7 +59,7 @@ void fat12_fs_creator(){
     write_to_file_int_as_byte(num_of_blocks, 2);
     
     // Write number of free blocks
-    int free_blocks = num_of_blocks - 1; // 1 block is reserved for FAT
+    int free_blocks = block_size - 1; // 1 block is reserved for FAT
     write_to_file_int_as_byte(free_blocks, 2);
 
     // Write number of files
@@ -560,6 +561,7 @@ bool read_f(){
 }
 
 bool dumpe2fs_f(){ 
+    cout << "Dumping filesystem information" << endl;
     file.seekg(0, std::ios::beg);
     printf("Blocks: %d\n", read_int_from_file(2));
     printf("Block Size: %d\n", read_int_from_file(2));
