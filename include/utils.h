@@ -76,6 +76,7 @@ int get_block_index_of_dir(string parent_directory_path);
 int get_value_from_fat12(int index);
 void directory_entry_reader_to_struct(char *dir_buffer_32);
 void directory_entry_writer_to_buffer(char *dir_buffer_32);
+void set_dir_entry_to_struct(int attribute, int block_index, string name);
 
 // Getting/Setting FAT functions
 

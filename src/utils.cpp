@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <fstream>
 #include <cstring>
+#include <ctime> 
 #include "../include/externs.h"
 using namespace std;
 
@@ -418,6 +419,17 @@ short get_free_block_index(){
     return result;
 }
 
+void set_dir_entry_to_struct(int attribute, int block_index, string name){
+    fat_directory.file_attributes = attribute;
+    fat_directory.first_block_no = block_index;
+    fat_directory.file_size = 0;
+    strncpy(fat_directory.file_name, name.c_str(), 8);
+    time_t now = time(0);
+    tm *ltm = localtime(&now);
+    fat_directory.date =  1900 + ltm->tm_year; // for example if date is 6/6/2023 then date will be 2023; so fits in 2 bytes
+    fat_directory.time = ltm->tm_hour * 100 + ltm->tm_min; // for example if time is 11:26 then time will be 1126; so fits in 2 bytes
+}
+
 
 bool mkdir_f(){
     ParsedPath parsed_path = path_parser(internal_path_name);
@@ -448,12 +460,7 @@ bool mkdir_f(){
                 file.seekp(START_BYTE + block_index_of_dir * block_size + i * SIZE_DE, std::ios::beg);
                 if(DEBUG) cout << "Inside loop and variables are " << block_index_of_dir << " " << i <<
                 " seek position is " << START_BYTE + block_index_of_dir * block_size + i * SIZE_DE << endl;
-                strncpy(fat_directory.file_name, parsed_path.last_part_name.c_str(), 8);
-                fat_directory.file_attributes = IS_DIR_DE;
-                fat_directory.date = 0;
-                fat_directory.time = 0;
-                fat_directory.first_block_no = get_free_block_index();
-                fat_directory.file_size = 0;        
+                set_dir_entry_to_struct(IS_DIR_DE, get_free_block_index(), parsed_path.last_part_name);
                 set_fat_val_to_file(fat_directory.first_block_no, END_OF_FAT);        
                 set_fat_val_to_file(-1, fat_directory.first_block_no); // -1 means sets as last block in the chain |al
 
@@ -482,13 +489,7 @@ bool mkdir_f(){
         if(DEBUG) cout << "New block index: " << new_block_index << " prev_block_index_of_dir: " << prev_block_index_of_dir << endl;
 
         file.seekp(START_BYTE + new_block_index * block_size, std::ios::beg);
-        strncpy(fat_directory.file_name, parsed_path.last_part_name.c_str(), 8);
-        fat_directory.file_attributes = IS_DIR_DE;
-        fat_directory.date = 0;
-        fat_directory.time = 0;
-        fat_directory.first_block_no = get_free_block_index();
-        fat_directory.file_size = 0;                
-
+        set_dir_entry_to_struct(IS_DIR_DE, get_free_block_index(), parsed_path.last_part_name);
 
         directory_entry_writer_to_buffer(dir_entry_buffer);
         write_to_file_byte(dir_entry_buffer, SIZE_DE);  // buffer to file
@@ -526,6 +527,13 @@ bool dir_f(){
             // Check if the directory entry is not empty (has valid attributes)
             if (fat_directory.file_attributes != IS_EMPTY_DE) {
                 // Output the name of the directory entry (could be file name or directory name)
+                cout << fat_directory.date << "\t";
+                cout << fat_directory.time / 100 << ":" << fat_directory.time % 100 << "\t";
+                if (fat_directory.file_attributes == IS_DIR_DE) {
+                    cout << "<DIR>\t";
+                } else {
+                    cout << "\t";
+                }
                 cout << "[" << fat_directory.file_name << "]\n";
             }
         }
