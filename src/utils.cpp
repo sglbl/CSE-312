@@ -86,7 +86,7 @@ void fat12_fs_creator(){
         i++;
     }
 
-    cout << "FAT12 Information is Created and Written to File\n";
+    cout << "FAT12 Information is Created and Written to File\n\n";
 }
 
 bool write_to_file_int_as_byte(int num, int size){
@@ -428,17 +428,17 @@ bool mkdir_f(){
 
     char dir_entry_buffer[32];
     short prev_block_index_of_dir = get_block_index_of_dir(parsed_path.parent_dir_path);
-    cout << "prev_block_index_of_dir: " << prev_block_index_of_dir << endl;
+    if(DEBUG) cout << "prev_block_index_of_dir: " << prev_block_index_of_dir << endl;
     bool is_block_created = 0; // for 4 kb every block can have 128 dir entries
 
     short block_index_of_dir = prev_block_index_of_dir;
     
-    while (block_index_of_dir != END_OF_FAT){
+    while (block_index_of_dir != END_OF_FAT){ // while not end of fat so that block exists
         file.seekg(START_BYTE + block_index_of_dir*block_size, std::ios::beg);
         int number_of_dir_entries_in_block = block_size / SIZE_DE;
         for(int i = 0; i < number_of_dir_entries_in_block; i++){
             file.read(dir_entry_buffer, SIZE_DE);
-            cout << "dir_entry_buffer: " << dir_entry_buffer << endl;
+            if(DEBUG)  cout << "dir_entry_buffer: " << dir_entry_buffer << endl;
             directory_entry_reader_to_struct(dir_entry_buffer);
             if(fat_directory.file_name == parsed_path.last_part_name && parsed_path.last_part_name != ""){
                 cout << "Directory " << parsed_path.last_part_name << " already exists" << endl;
@@ -446,7 +446,7 @@ bool mkdir_f(){
             }
             if(fat_directory.file_attributes == IS_EMPTY_DE){
                 file.seekp(START_BYTE + block_index_of_dir * block_size + i * SIZE_DE, std::ios::beg);
-                cout << "Inside loop and variables are " << block_index_of_dir << " " << i <<
+                if(DEBUG) cout << "Inside loop and variables are " << block_index_of_dir << " " << i <<
                 " seek position is " << START_BYTE + block_index_of_dir * block_size + i * SIZE_DE << endl;
                 strncpy(fat_directory.file_name, parsed_path.last_part_name.c_str(), 8);
                 fat_directory.file_attributes = IS_DIR_DE;
@@ -474,12 +474,12 @@ bool mkdir_f(){
         // create new block
         short new_block_index = get_free_block_index();
         file.seekp(START_BYTE + new_block_index * block_size, std::ios::beg);
-        cout << "Outside loop and variables are " << block_index_of_dir << " " <<
+        if(DEBUG) cout << "Outside loop and variables are " << block_index_of_dir << " " <<
             " seek position is " << START_BYTE + new_block_index * block_size << endl;
 
         set_fat_val_to_file(new_block_index, END_OF_FAT); // set fat value of new block to END_OF_FAT
         set_fat_val_to_file(prev_block_index_of_dir, new_block_index); // set fat value of prev block to new block index
-        cout << "New block index: " << new_block_index << " prev_block_index_of_dir: " << prev_block_index_of_dir << endl;
+        if(DEBUG) cout << "New block index: " << new_block_index << " prev_block_index_of_dir: " << prev_block_index_of_dir << endl;
 
         file.seekp(START_BYTE + new_block_index * block_size, std::ios::beg);
         strncpy(fat_directory.file_name, parsed_path.last_part_name.c_str(), 8);
@@ -494,11 +494,12 @@ bool mkdir_f(){
         write_to_file_byte(dir_entry_buffer, SIZE_DE);  // buffer to file
     }
 
-    
+    cout << "Directory " << parsed_path.last_part_name << " created" << endl;
     return true;
 }
 
 bool dir_f(){
+    cout << "Directory listing of " << internal_path_name << endl;
     // Get the block index of the directory based on the internal path name
     short block_index_of_dir = get_block_index_of_dir(internal_path_name);
 
@@ -509,7 +510,7 @@ bool dir_f(){
     while (block_index_of_dir != END_OF_FAT) {
         // Setting file position to the beginning of the current dir_block
         int point_to_seek = START_BYTE + block_index_of_dir * block_size;
-        cout << "Block index of dir " << block_index_of_dir << ", point_to_seek: " << point_to_seek << endl;
+        if(DEBUG) cout << "Block index of dir " << block_index_of_dir << ", point_to_seek: " << point_to_seek << endl;
         file.seekg(point_to_seek, ios::beg);
 
         // Calculate the num_of_dir_entries in the block by dividing to 32
@@ -586,16 +587,18 @@ int get_block_index_of_dir(string parent_directory_path){
         int find_flag = 0;
         short block_index = 0;
         block_index = block_index_of_dir;
+         // check all blocks of the directory
         while(block_index != END_OF_FAT){
             file.seekg(START_BYTE + block_index*block_size, std::ios::beg);
             int dir_entry_index = block_size / SIZE_DE;
-            for(int i = 0; i < dir_entry_index; i++){
+            // check all directory entries in the block if find the directory break and return the block index
+            for(int i = 0; i < dir_entry_index; i++){   
                 char dir_buffer[SIZE_DE];
                 read_from_file_to_dir_buffer(dir_buffer, SIZE_DE/*32*/);
                 directory_entry_reader_to_struct(dir_buffer);
                 if(parsed_path.first_part_name == fat_directory.file_name 
                    && fat_directory.file_attributes == IS_DIR_DE){ // if find the directory break and return the block index
-                    cout << "File name: " << fat_directory.file_name << endl;
+                    if(DEBUG) cout << "Dir name: " << fat_directory.file_name << endl;
                     find_flag = 1;
                     block_index_of_dir = fat_directory.first_block_no;
                     break;

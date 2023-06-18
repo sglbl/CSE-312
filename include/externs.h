@@ -5,7 +5,6 @@
 #endif
 
 #include "utils.h"
-#define DEBUG 1
 
 // not making static because of: multiple definition for each include
 EXTERN FATDirectoryEntry fat_directory;  

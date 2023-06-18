@@ -7,6 +7,7 @@ using namespace std;
 #define FILE_NAME_SIZE 8
 #define EXTENSION_SIZE 3
 #define START_BYTE 8202 // 4096*2 (2 blocks for system) + 10 reserved
+#define DEBUG 0 // 1: debug mode printing some additional info, 0: normal mode
 #define SIZE_DE 32
 
 // Attirbutes for Directory Entry (DE)
