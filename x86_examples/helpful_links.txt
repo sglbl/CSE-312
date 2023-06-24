@@ -1,0 +1,3 @@
+https://github.com/elopezsolis/ProcessTable/blob/master/ProcessTable.java
+https://github.com/guilleiguaran/xv6/blob/ff2783442ea2801a4bf6c76f198f36a6e985e7dd/proc.c#L129
+https://github.com/pykello/arunos/blob/master/kernel/proc/syscall_fork.c
